@@ -1,1 +1,64 @@
 /* css styles */
+
+/* Style for the navbar */
+.navbar {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    background-color: white; /* White background for the navbar */
+}
+
+/* Override Bootstrap's default font color */
+.navbar .navbar-brand, .navbar .navbar-nav .nav-link {
+    color: black !important; /* Ensures the text color is black */
+    font-weight: bold;
+}
+
+/* Override text color for all banner elements */
+.banner, .banner h1, .navbar .navbar-nav .nav-link {
+    color: black !important; /* Forces black color */
+    font-weight: bold;
+}
+
+/* Dropdown menu links */
+.dropdown-menu .dropdown-item {
+    color: black !important; /* Set text color to black */
+}
+
+/* Dropdown menu links on hover */
+.dropdown-menu .dropdown-item:hover {
+    color: black !important; /* Ensure hover color remains black */
+    background-color: #f8f9fa !important; /* Optional: Set a background color on hover */
+}
+
+/* Style for the logo */
+.logo {
+    margin-right: 40px;
+}
+
+/* Style for navbar links */
+.navbar-links {
+    display: flex;
+    gap: 20px;
+}
+
+/* Style for the page title */
+.page-title {
+    font-family: 'Roboto Slab', serif;
+    font-size: 36px;
+    margin-top: 20px;
+    margin-left: 20px;
+    color: #000; /* Black color for the page title */
+}
+
+/* General body background color */
+body {
+    background-color: #F5F5F5; /* Light gray background for the entire page */
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 100%;
+    width: auto;
+}

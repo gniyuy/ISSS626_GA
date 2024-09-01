@@ -1,0 +1,20 @@
+---
+format: 
+  html:
+    theme: lux
+    number-sections: true
+
+title: "In-class Exercise 2"
+author: "Tai Yu Ying"
+date: "Sep 2 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  message: false
+  freeze: true
+---
+
+::: {style="font-size: 100px; text-align: center; color: #786F80;"}
+work in progress
+:::

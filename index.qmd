@@ -1,11 +1,9 @@
 ---
-title: "ISSS626_GA"
+format: 
+  html:
+    theme: lux
+    css: styles.css
+    page-layout: custom
 ---
 
-This is a Quarto website.
-
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
-
-```{r}
-1 + 1
-```
+![](Homepage%20image/169951-842348732_small.gif){width="100%"}

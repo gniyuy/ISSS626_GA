@@ -1,0 +1,136 @@
+---
+format: 
+  html:
+    theme: lux
+    number-sections: true
+
+title: "In-class Exercise 1"
+author: "Tai Yu Ying"
+date: "Aug 26 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  message: false
+  freeze: true
+---
+
+## Loading the R packages
+
+::: panel-tabset
+### The task
+
+For the purpose of this in-class exercise, the following R packages will be used:
+
+-   [tidyverse](https://www.tidyverse.org/)
+-   [sf](https://r-spatial.github.io/sf/)
+-   [tmap](https://cran.r-project.org/web/packages/tmap/)
+-   [ggstatsplot](https://indrajeetpatil.github.io/ggstatsplot/)
+
+Write a code chunk to check if these packages have been installed in R. If yes, load them in R environment.
+
+### The code
+
+```{r}
+#| eval: false
+pacman::p_load(tidyverse, sf, tmap, ggstatsplot)
+```
+:::
+
+## Working with Master Plan Planning Sub-zone Data
+
+::: panel-tabset
+### The task
+
+1.  Create a sub-folder called data in In-class_Ex01 folder.
+
+2.  If necessary visit data.gov.sg and download Master Plan 2014 Subzone Boundary (Web) from the portal. You are required to download both the ESRI shapefile and kml file.
+
+3.  Write a code chunk to import Master Plan 2014 Subzone Boundary (Web) in shapefile and kml save them in sf simple features data frame.
+
+### The code
+
+*Install the sf Package*
+
+```{r}
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+install.packages("sf")
+library(sf)
+```
+
+This code chunk imports shapefile.
+
+```{r}
+mpsz14_shp <- st_read(dsn = "C:/gniyuy/ISSS626_GA/In-class_Ex/In-class_Ex01/Data/",
+            layer = "MP14_SUBZONE_WEB_PL")
+```
+
+This code chunk imports kml file.
+
+```{r}
+#| eval: false
+mpsz14_kml <- st_read("C:/gniyuy/ISSS626_GA/In-class_Ex/In-class_Ex01/Data/MasterPlan2014SubzoneBoundaryWebKML.kml")
+```
+:::
+
+## Working with Master Plan Planning Sub-zone Data
+
+::: panel-tabset
+### The task
+
+Write a code chunk to export mpsz14_shp sf data.frame into kml file save the output in data sub-folder. Name the output file MP14_SUBZONE_WEB_PL.
+
+### The code
+
+```{r}
+st_write(mpsz14_shp, 
+         "C:/gniyuy/ISSS626_GA/In-class_Ex/In-class_Ex01/Data/MasterPlan2014SubzoneBoundaryWebKML.kml",
+         delete_dsn = TRUE)
+```
+:::
+
+## Working with Pre-school Location Data
+
+::: panel-tabset
+### The task
+
+1.  If necessary visit data.gov.sg and download Pre-Schools Location from the portal. You are required to download both the kml and geojson files.
+2.  Write a code chunk to import Pre-Schools Location in kml geojson save them in sf simple features data frame.
+
+### The code
+
+This code chunk imports kml file.
+
+```{r}
+preschool_kml <- st_read("C:/gniyuy/ISSS626_GA/In-class_Ex/In-class_Ex01/Data/PreSchoolsLocation.kml")
+```
+
+This code chunk imports geojson file.
+
+```{r}
+preschool_geojson <- st_read("C:/gniyuy/ISSS626_GA/In-class_Ex/In-class_Ex01/Data/PreSchoolsLocation.geojson")
+```
+:::
+
+## Working with Master Plan 2019 Subzone Boundary Data
+
+::: panel-tabset
+### The task
+
+1.  Visit data.gov.sg and download Master Plan 2019 Subzone Boundary (No Sea) from the portal. You are required to download both the kml file.
+2.  Move MPSZ-2019 shapefile provided for In-class Exercise 1 folder on elearn to data sub-folder of In-class_Ex02.
+3.  Write a code chunk to import *Master Plan 2019 Subzone Boundary (No SEA)* kml and MPSZ-2019 into sf simple feature data.frame.
+
+### To import shapefile
+
+```{r}
+mpsz19_shp <- st_read(dsn = "C:/gniyuy/ISSS626_GA/In-class_Ex/In-class_Ex01/Data/",
+              layer = "MPSZ-2019")
+```
+
+### To import kml
+
+```{r}
+mpsz19_kml <- st_read("C:/gniyuy/ISSS626_GA/In-class_Ex/In-class_Ex01/Data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
+```
+:::
