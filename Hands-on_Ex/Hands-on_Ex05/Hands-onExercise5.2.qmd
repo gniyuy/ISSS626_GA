@@ -4,9 +4,9 @@ format:
     theme: lux
     number-sections: true
 
-title: "In-class Exercise 4"
+title: "Hands-on Exercise 5.2"
 author: "Tai Yu Ying"
-date: "Sep 16 2024"
+date: "Sep 19 2024"
 date-modified: "last-modified"
 execute: 
   eval: true

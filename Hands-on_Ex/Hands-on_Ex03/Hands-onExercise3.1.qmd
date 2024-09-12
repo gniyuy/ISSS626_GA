@@ -56,13 +56,15 @@ pacman::p_load(sf, spNetwork, tmap, tidyverse)
 The code chunk below uses `st_read()` of **sf** package to important Punggol_St and Punggol_CC geospatial data sets into RStudio as sf data frames.
 
 ```{r}
-network <- st_read(dsn="C:/gniyuy/ISSS626_GA/Hands-on_Ex/Hands-on_Ex03/Data/Geospatial", 
+network <- st_read(dsn="Data/Geospatial", 
                    layer="Punggol_St")
 ```
 
 ```{r}
-childcare <- st_read(dsn="C:/gniyuy/ISSS626_GA/Hands-on_Ex/Hands-on_Ex03/Data/Geospatial",
-                     layer="Punggol_CC")
+childcare <- st_read(dsn="Data/Geospatial",
+                     layer="Punggol_CC") %>%
+  st_zm(drop = TRUE,
+        what = "ZM")
 ```
 
 We can examine the structure of the output simple features data tables in RStudio. Alternative, code chunk below can be used to print the content of network and childcare simple features objects by using the code chunk below.
@@ -86,6 +88,11 @@ When I exploring spNetwork’s functions, it came to my attention that spNetwork
 ## Visualising the Geospatial Data
 
 Before we jump into the analysis, it is a good practice to visualise the geospatial data. There are at least two ways to visualise the geospatial data. One way is by using *plot()* of Base R as shown in the code chunk below.
+
+```{r}
+plot(network)
+plot(childcare,add=T,col='red',pch = 19)
+```
 
 ```{r}
 plot(st_geometry(network))
@@ -132,6 +139,15 @@ Next, *lines_center()* of **spNetwork** will be used to generate a SpatialPo
 
 ```{r}
 samples <- lines_center(lixels) 
+```
+
+```{r}
+tmap_mode('view')
+tm_shape(lixels) +
+  tm_lines() + 
+tm_shape(samples) + 
+  tm_dots(size = 0.01)
+tmap_mode('plot')
 ```
 
 The points are located at center of the line based on the length of the line.
