@@ -75,3 +75,7 @@ acc <- read_csv("Data/rawdata/thai_road_accident_2019_2022.csv") %>%
 ```{r}
 write_rds(acc, "Data/rds/acc.rds")
 ```
+
+```{r}
+acc <- read_rds("Data/rds/acc.rds")
+```
