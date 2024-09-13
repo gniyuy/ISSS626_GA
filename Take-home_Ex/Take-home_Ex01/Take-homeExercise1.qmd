@@ -58,7 +58,7 @@ pacman::p_load(sf, spNetwork, tmap, tidyverse)
 
 ## Data Import and Preparation
 
-Since `acc` data set is in csv file format, we will use [*read_csv()*](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package to import `listing.csv` as shown the code chunk below. The output R object is called `acc`.
+Since `acc` data set is in csv file format, we will use [*read_csv()*](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package to import `thai_road_accident_2019_2022.csv` as shown the code chunk below. The output R object is called `acc`.
 
 The below code reads in a CSV of traffic accidents, filters out rows with missing coordinates, creates new columns for the month and day of the accidents, converts the dataframe to a spatial object, and then transforms the spatial data to a specific CRS for further geospatial analysis.
 

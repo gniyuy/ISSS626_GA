@@ -313,7 +313,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="data-import-and-preparation" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="data-import-and-preparation"><span class="header-section-number">5</span> Data Import and Preparation</h2>
-<p>Since&nbsp;<code>acc</code>&nbsp;data set is in csv file format, we will use&nbsp;<a href="https://readr.tidyverse.org/reference/read_delim.html"><em>read_csv()</em></a>&nbsp;of&nbsp;<strong>readr</strong>&nbsp;package to import&nbsp;<code>listing.csv</code>&nbsp;as shown the code chunk below. The output R object is called&nbsp;<code>acc</code>.</p>
+<p>Since&nbsp;<code>acc</code>&nbsp;data set is in csv file format, we will use&nbsp;<a href="https://readr.tidyverse.org/reference/read_delim.html"><em>read_csv()</em></a>&nbsp;of&nbsp;<strong>readr</strong>&nbsp;package to import&nbsp;<code>thai_road_accident_2019_2022.csv</code>&nbsp;as shown the code chunk below. The output R object is called&nbsp;<code>acc</code>.</p>
 <p>The below code reads in a CSV of traffic accidents, filters out rows with missing coordinates, creates new columns for the month and day of the accidents, converts the dataframe to a spatial object, and then transforms the spatial data to a specific CRS for further geospatial analysis.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"Data/rawdata/thai_road_accident_2019_2022.csv"</span>) <span class="sc">%&gt;%</span></span>
