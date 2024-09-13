@@ -67,7 +67,7 @@
     "href": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html",
     "title": "Take-home Exercise 1",
     "section": "",
-    "text": "work in progress"
+    "text": "Road traffic accidents are a major global health issue, causing millions of deaths and injuries each year. The majority of fatalities occur in low- and middle-income countries, particularly among vulnerable road users. These accidents not only lead to human suffering but also impose a significant economic burden on individuals, families, and nations. Thailand, in particular, has a high rate of road traffic deaths, with a significant portion of accidents occurring on national highways and in designated “black spots.”"
   },
   {
     "objectID": "In-class_Ex/In-class_Ex03/In-classExercise3.html",
@@ -572,5 +572,40 @@
     "title": "In-class Exercise 3",
     "section": "8 References",
     "text": "8 References\n\nspNetwork: Spatial Analysis on Network\nNetwork Kernel Density Estimate\nDetails about NKDE\nNetwork k Functions"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#overview",
+    "href": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#overview",
+    "title": "Take-home Exercise 1",
+    "section": "",
+    "text": "Road traffic accidents are a major global health issue, causing millions of deaths and injuries each year. The majority of fatalities occur in low- and middle-income countries, particularly among vulnerable road users. These accidents not only lead to human suffering but also impose a significant economic burden on individuals, families, and nations. Thailand, in particular, has a high rate of road traffic deaths, with a significant portion of accidents occurring on national highways and in designated “black spots.”"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#objective",
+    "href": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#objective",
+    "title": "Take-home Exercise 1",
+    "section": "2 Objective",
+    "text": "2 Objective\nThe objective of this project is to investigate the factors influencing road traffic accidents in the Bangkok Metropolitan Region (BMR) using spatial and spatio-temporal point pattern analysis.\n\nVisualize spatio-temporal dynamics: Use statistical graphics and geovisualization methods to depict the distribution of road traffic accidents over time and space.\nConduct spatial analysis: Employ network-based spatial point pattern analysis methods to examine the spatial distribution of accidents within the road network.\nConduct spatio-temporal analysis: Utilize temporal network-based spatial point pattern analysis methods to explore the relationship between accidents and both spatial and temporal factors."
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#the-data",
+    "href": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#the-data",
+    "title": "Take-home Exercise 1",
+    "section": "3 The Data",
+    "text": "3 The Data\nThree basic data sets are used, they are:\n\nThailand Road Accident [2019-2022] on Kaggle\nThailand Roads (OpenStreetMap Export) on HDX.\nThailand - Subnational Administrative Boundaries on HDX."
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#installing-and-launching-the-r-packages",
+    "href": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#installing-and-launching-the-r-packages",
+    "title": "Take-home Exercise 1",
+    "section": "4 Installing and launching the R packages",
+    "text": "4 Installing and launching the R packages\nIn this exercise, four R packages will be used, they are:\n\nspNetwork, which provides functions to perform Spatial Point Patterns Analysis such as kernel density estimation (KDE) and K-function on network. It also can be used to build spatial matrices (‘listw’ objects like in ‘spdep’ package) to conduct any kind of traditional spatial analysis with spatial weights based on reticular distances.\nsf package provides functions to manage, processing, and manipulate Simple Features, a formal geospatial data standard that specifies a storage and access model of spatial geometries such as points, lines, and polygons.\ntmap which provides functions for plotting cartographic quality static point patterns maps or interactive maps by using leaflet API.\n\nUse the code chunk below to install and launch the four R packages.\n\npacman::p_load(sf, spNetwork, tmap, tidyverse)"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#data-import-and-preparation",
+    "href": "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.html#data-import-and-preparation",
+    "title": "Take-home Exercise 1",
+    "section": "5 Data Import and Preparation",
+    "text": "5 Data Import and Preparation\nSince acc data set is in csv file format, we will use read_csv() of readr package to import listing.csv as shown the code chunk below. The output R object is called acc.\nThe below code reads in a CSV of traffic accidents, filters out rows with missing coordinates, creates new columns for the month and day of the accidents, converts the dataframe to a spatial object, and then transforms the spatial data to a specific CRS for further geospatial analysis.\n\nacc &lt;- read_csv(\"Data/rawdata/thai_road_accident_2019_2022.csv\") %&gt;%\n  filter(!is.na(longitude) & !is.na(latitude)) %&gt;%   # Filter out rows with missing coordinates\n  mutate(Month_num = month(incident_datetime)) %&gt;%\n  mutate(Month_fac = month(incident_datetime, label = TRUE, abbr = TRUE)) %&gt;%\n  mutate(dayofweek = day(incident_datetime)) %&gt;%\n  st_as_sf(coords = c(\"longitude\", \"latitude\"), crs = 4326) %&gt;%  # Specify the CRS\n  st_transform(crs = 32647)  # Transform to your desired CRS\n\n\nwrite_rds(acc, \"Data/rds/acc.rds\")"
   }
 ]
