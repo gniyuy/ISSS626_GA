@@ -230,9 +230,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#overview" id="toc-overview" class="nav-link active" data-scroll-target="#overview"><span class="header-section-number">1</span> Overview</a></li>
   <li><a href="#objective" id="toc-objective" class="nav-link" data-scroll-target="#objective"><span class="header-section-number">2</span> Objective</a></li>
-  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data"><span class="header-section-number">3</span> <strong>The Data</strong></a></li>
+  <li><a href="#the-data" id="toc-the-data" class="nav-link" data-scroll-target="#the-data"><span class="header-section-number">3</span> The Data</a></li>
   <li><a href="#installing-and-launching-the-r-packages" id="toc-installing-and-launching-the-r-packages" class="nav-link" data-scroll-target="#installing-and-launching-the-r-packages"><span class="header-section-number">4</span> Installing and launching the R packages</a></li>
-  <li><a href="#data-import-and-preparation" id="toc-data-import-and-preparation" class="nav-link" data-scroll-target="#data-import-and-preparation"><span class="header-section-number">5</span> Data Import and Preparation</a></li>
+  <li><a href="#data-import-and-preparation" id="toc-data-import-and-preparation" class="nav-link" data-scroll-target="#data-import-and-preparation"><span class="header-section-number">5</span> Data Import and Preparation</a>
+  <ul class="collapse">
+  <li><a href="#importing-thailand-road-accident-2019-2022" id="toc-importing-thailand-road-accident-2019-2022" class="nav-link" data-scroll-target="#importing-thailand-road-accident-2019-2022"><span class="header-section-number">5.1</span> Importing Thailand Road Accident [2019-2022]</a></li>
+  <li><a href="#importing-thailand-roads-openstreetmap-export" id="toc-importing-thailand-roads-openstreetmap-export" class="nav-link" data-scroll-target="#importing-thailand-roads-openstreetmap-export"><span class="header-section-number">5.2</span> Importing Thailand Roads (OpenStreetMap Export)</a></li>
+  <li><a href="#importing-thailand---subnational-administrative-boundaries" id="toc-importing-thailand---subnational-administrative-boundaries" class="nav-link" data-scroll-target="#importing-thailand---subnational-administrative-boundaries"><span class="header-section-number">5.3</span> Importing Thailand - Subnational Administrative Boundaries</a></li>
+  <li><a href="#define-and-filter-bangkok-metropolitan-region-bmr" id="toc-define-and-filter-bangkok-metropolitan-region-bmr" class="nav-link" data-scroll-target="#define-and-filter-bangkok-metropolitan-region-bmr"><span class="header-section-number">5.4</span> Define and filter Bangkok Metropolitan Region (BMR)</a></li>
+  </ul></li>
+  <li><a href="#plotting-the-geospatial-data" id="toc-plotting-the-geospatial-data" class="nav-link" data-scroll-target="#plotting-the-geospatial-data"><span class="header-section-number">6</span> Plotting the Geospatial Data</a></li>
   </ul>
 </nav>
     </div>
@@ -265,7 +272,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 14, 2024</p>
+      <p class="date-modified">September 18, 2024</p>
     </div>
   </div>
     
@@ -290,7 +297,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 </section>
 <section id="the-data" class="level2" data-number="3">
-<h2 data-number="3" class="anchored" data-anchor-id="the-data"><span class="header-section-number">3</span> <strong>The Data</strong></h2>
+<h2 data-number="3" class="anchored" data-anchor-id="the-data"><span class="header-section-number">3</span> The Data</h2>
 <p>Three basic data sets are used, they are:</p>
 <ul>
 <li><p><a href="https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022">Thailand Road Accident [2019-2022]</a> on Kaggle</p></li>
@@ -313,11 +320,33 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="data-import-and-preparation" class="level2" data-number="5">
 <h2 data-number="5" class="anchored" data-anchor-id="data-import-and-preparation"><span class="header-section-number">5</span> Data Import and Preparation</h2>
+<section id="importing-thailand-road-accident-2019-2022" class="level3" data-number="5.1">
+<h3 data-number="5.1" class="anchored" data-anchor-id="importing-thailand-road-accident-2019-2022"><span class="header-section-number">5.1</span> Importing <a href="https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022">Thailand Road Accident [2019-2022]</a></h3>
 <p>Since&nbsp;<code>acc</code>&nbsp;data set is in csv file format, we will use&nbsp;<a href="https://readr.tidyverse.org/reference/read_delim.html"><em>read_csv()</em></a>&nbsp;of&nbsp;<strong>readr</strong>&nbsp;package to import&nbsp;<code>thai_road_accident_2019_2022.csv</code>&nbsp;as shown the code chunk below. The output R object is called&nbsp;<code>acc</code>.</p>
-<p>The below code reads in a CSV of traffic accidents, filters out rows with missing coordinates, creates new columns for the month and day of the accidents, converts the dataframe to a spatial object, and then transforms the spatial data to a specific CRS for further geospatial analysis.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true">Objectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">The code</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false">Missing data check</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false">Examine output</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-5-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-5" role="tab" aria-controls="tabset-1-5" aria-selected="false">Selecting relevant columns</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-6-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-6" role="tab" aria-controls="tabset-1-6" aria-selected="false">Why These Columns?</a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<p>The below code uses the following to:</p>
+<ul>
+<li><p><strong><code>read_csv()</code></strong>: This function is used to load the CSV file (<code>thai_road_accident_2019_2022.csv</code>) into R. The dataset is stored in a variable called <code>acc</code>.</p></li>
+<li><p><strong><code>filter()</code></strong>: This function is from the <code>dplyr</code> package and is used to filter the rows of the dataset.</p></li>
+<li><p><strong><code>!is.na(longitude) &amp; !is.na(latitude)</code></strong>: This condition ensures that only rows where both <code>longitude</code> and <code>latitude</code> are not missing (<code>NA</code>) are kept. Any rows with missing coordinates will be removed.</p></li>
+<li><p><strong><code>mutate()</code></strong>: This function is used to create or modify columns in a dataframe</p></li>
+<li><p><strong><code>month(incident_datetime)</code></strong>: This function extracts the month from the <code>incident_datetime</code> column, and stores it in a new column called <code>Month_num</code> (numeric form of the month)</p></li>
+<li><p><strong><code>month(incident_datetime, label = TRUE, abbr = TRUE)</code></strong>: This extracts the month in a labeled form, and it will be abbreviated (e.g., “Jan”, “Feb”). This is stored in a new column called <code>Month_fac</code></p></li>
+<li><p><strong><code>day(incident_datetime)</code></strong>: This extracts the day of the month from the <code>incident_datetime</code> column and stores it in a new column called <code>dayofweek</code></p></li>
+<li><p><strong><code>st_as_sf()</code></strong>: This function from the <code>sf</code> package is used to convert the dataframe to a simple features (spatial) object</p></li>
+<li><p><strong><code>coords = c("longitude", "latitude")</code></strong>: This argument tells <code>st_as_sf()</code> to use the <code>longitude</code> and <code>latitude</code> columns to define the spatial coordinates</p></li>
+<li><p><strong><code>crs = 4326</code></strong>: This specifies the Coordinate Reference System (CRS) for the spatial object. EPSG:4326 refers to <strong>WGS 84</strong>, which is the standard geographic CRS (latitude and longitude in degrees)</p></li>
+<li><p><strong><code>st_transform()</code></strong>: This function is used to reproject the spatial object to a different CRS</p></li>
+<li><p><strong><code>crs = 32647</code></strong>: This specifies the target CRS, which is <strong>UTM Zone 47N</strong>. This is a projected CRS that uses meters as units and is more appropriate for spatial analysis in Thailand. EPSG:32647 is commonly used for accurate distance and area measurements in this region</p></li>
+</ul>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
 <div class="cell">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"Data/rawdata/thai_road_accident_2019_2022.csv"</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(longitude) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(latitude)) <span class="sc">%&gt;%</span>   <span class="co"># Filter out rows with missing coordinates</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(longitude) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(latitude)) <span class="sc">%&gt;%</span>   <span class="co"># Filter out rows with missing geographic coordinates</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Month_num =</span> <span class="fu">month</span>(incident_datetime)) <span class="sc">%&gt;%</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Month_fac =</span> <span class="fu">month</span>(incident_datetime, <span class="at">label =</span> <span class="cn">TRUE</span>, <span class="at">abbr =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">dayofweek =</span> <span class="fu">day</span>(incident_datetime)) <span class="sc">%&gt;%</span></span>
@@ -329,6 +358,738 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>acc <span class="ot">&lt;-</span> <span class="fu">read_rds</span>(<span class="st">"Data/rds/acc.rds"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<p>We can identify rows with missing values by applying <em>filter()</em> in combination with <em>is.na()</em> to check each column in your dataset. The function <em>if_any()</em> checks all columns, and if any of the columns contain <em>NA</em>, the corresponding row will be flagged.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Identify rows with missing values</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>acc_incomplete <span class="ot">&lt;-</span> acc <span class="sc">%&gt;%</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">if_any</span>(<span class="fu">everything</span>(), is.na))</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># View incomplete rows</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>acc_incomplete</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 0 features and 19 fields
+Bounding box:  xmin: NA ymin: NA xmax: NA ymax: NA
+Projected CRS: WGS 84 / UTM zone 47N
+# A tibble: 0 × 20
+# ℹ 20 variables: acc_code &lt;dbl&gt;, incident_datetime &lt;dttm&gt;,
+#   report_datetime &lt;dttm&gt;, province_th &lt;chr&gt;, province_en &lt;chr&gt;, agency &lt;chr&gt;,
+#   route &lt;chr&gt;, vehicle_type &lt;chr&gt;, presumed_cause &lt;chr&gt;, accident_type &lt;chr&gt;,
+#   number_of_vehicles_involved &lt;dbl&gt;, number_of_fatalities &lt;dbl&gt;,
+#   number_of_injuries &lt;dbl&gt;, weather_condition &lt;chr&gt;, road_description &lt;chr&gt;,
+#   slope_description &lt;chr&gt;, Month_num &lt;dbl&gt;, Month_fac &lt;ord&gt;, dayofweek &lt;int&gt;,
+#   geometry &lt;GEOMETRY [m]&gt;</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
+<p>After importing the data file into R, it is important for us to examine if the data file has been imported correctly.</p>
+<p>The code chunk below shows <em>summary()</em> and <em>list()</em> of Base R.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(acc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    acc_code       incident_datetime               
+ Min.   : 571834   Min.   :2019-01-01 00:00:00.00  
+ 1st Qu.:3789326   1st Qu.:2020-01-16 14:57:30.00  
+ Median :3823434   Median :2021-01-02 18:30:00.00  
+ Mean   :4228913   Mean   :2021-01-08 11:25:47.25  
+ 3rd Qu.:5830777   3rd Qu.:2022-01-02 19:17:00.00  
+ Max.   :7571316   Max.   :2022-12-31 23:55:00.00  
+                                                   
+ report_datetime                  province_th        province_en       
+ Min.   :2019-01-01 03:05:00.00   Length:81376       Length:81376      
+ 1st Qu.:2020-03-16 15:27:00.00   Class :character   Class :character  
+ Median :2021-03-31 08:39:00.00   Mode  :character   Mode  :character  
+ Mean   :2021-03-26 16:52:04.98                                        
+ 3rd Qu.:2022-03-01 10:02:15.00                                        
+ Max.   :2023-01-26 13:20:00.00                                        
+                                                                       
+    agency             route           vehicle_type       presumed_cause    
+ Length:81376       Length:81376       Length:81376       Length:81376      
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+ accident_type      number_of_vehicles_involved number_of_fatalities
+ Length:81376       Min.   : 0.000              Min.   : 0.0000     
+ Class :character   1st Qu.: 1.000              1st Qu.: 0.0000     
+ Mode  :character   Median : 1.000              Median : 0.0000     
+                    Mean   : 1.535              Mean   : 0.1461     
+                    3rd Qu.: 2.000              3rd Qu.: 0.0000     
+                    Max.   :27.000              Max.   :13.0000     
+                                                                    
+ number_of_injuries weather_condition  road_description   slope_description 
+ Min.   : 0.0000    Length:81376       Length:81376       Length:81376      
+ 1st Qu.: 0.0000    Class :character   Class :character   Class :character  
+ Median : 0.0000    Mode  :character   Mode  :character   Mode  :character  
+ Mean   : 0.8139                                                            
+ 3rd Qu.: 1.0000                                                            
+ Max.   :51.0000                                                            
+                                                                            
+   Month_num        Month_fac       dayofweek              geometry    
+ Min.   : 1.000   Dec    : 9621   Min.   : 1.00   POINT        :81376  
+ 1st Qu.: 3.000   Apr    : 9403   1st Qu.: 8.00   epsg:32647   :    0  
+ Median : 6.000   Jan    : 8494   Median :15.00   +proj=utm ...:    0  
+ Mean   : 6.469   Mar    : 6468   Mean   :15.72                        
+ 3rd Qu.:10.000   Oct    : 6293   3rd Qu.:24.00                        
+ Max.   :12.000   Jul    : 6255   Max.   :31.00                        
+                  (Other):34842                                        </code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">list</span>(acc)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[[1]]
+Simple feature collection with 81376 features and 19 fields
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: -16183190 ymin: -936.228 xmax: 1200243 ymax: 4918525
+Projected CRS: WGS 84 / UTM zone 47N
+# A tibble: 81,376 × 20
+   acc_code incident_datetime   report_datetime     province_th province_en     
+ *    &lt;dbl&gt; &lt;dttm&gt;              &lt;dttm&gt;              &lt;chr&gt;       &lt;chr&gt;           
+ 1   571905 2019-01-01 00:00:00 2019-01-02 06:11:00 ลพบุรี        Loburi          
+ 2  3790870 2019-01-01 00:03:00 2020-02-20 13:48:00 อุบลราชธานี   Ubon Ratchathani
+ 3   599075 2019-01-01 00:05:00 2019-01-01 10:35:00 ประจวบคีรีขันธ์ Prachuap Khiri …
+ 4   571924 2019-01-01 00:20:00 2019-01-02 05:12:00 เชียงใหม่     Chiang Mai      
+ 5   599523 2019-01-01 00:25:00 2019-01-04 09:42:00 นครสวรรค์    Nakhon Sawan    
+ 6   571982 2019-01-01 00:30:00 2019-01-07 12:46:00 แม่ฮ่องสอน    Mae Hong Son    
+ 7   612782 2019-01-01 00:30:00 2019-10-25 14:25:00 ชุมพร        Chumphon        
+ 8   599235 2019-01-01 00:35:00 2019-01-02 16:23:00 สิงห์บุรี       Sing Buri       
+ 9   600643 2019-01-01 00:40:00 2019-01-11 10:01:00 สงขลา       Songkhla        
+10   599105 2019-01-01 00:45:00 2019-01-01 10:11:00 ตราด        Trat            
+# ℹ 81,366 more rows
+# ℹ 15 more variables: agency &lt;chr&gt;, route &lt;chr&gt;, vehicle_type &lt;chr&gt;,
+#   presumed_cause &lt;chr&gt;, accident_type &lt;chr&gt;,
+#   number_of_vehicles_involved &lt;dbl&gt;, number_of_fatalities &lt;dbl&gt;,
+#   number_of_injuries &lt;dbl&gt;, weather_condition &lt;chr&gt;, road_description &lt;chr&gt;,
+#   slope_description &lt;chr&gt;, Month_num &lt;dbl&gt;, Month_fac &lt;ord&gt;, dayofweek &lt;int&gt;,
+#   geometry &lt;POINT [m]&gt;</code></pre>
+</div>
+</div>
+</div>
+<div id="tabset-1-5" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-5-tab">
+<ol type="1">
+<li><p><strong><code>acc_code</code></strong>: Unique identifier for each accident. Useful for tracking individual incidents.</p></li>
+<li><p><strong><code>incident_datetime</code></strong>: Date and time of the accident. Important for temporal analysis (e.g., analyzing accidents by time of day or day of the week).</p></li>
+<li><p><strong><code>province_en</code></strong>: The province where the accident occurred. You’ll need this to filter accidents within the Bangkok Metropolitan Region (BMR).</p></li>
+<li><p><strong><code>vehicle_type</code></strong>: The type of vehicles involved in the accident. This is useful for understanding vehicle-specific trends in accidents.</p></li>
+<li><p><strong><code>presumed_cause</code></strong>: The suspected cause of the accident. This helps with behavioral analysis and understanding the major factors contributing to accidents.</p></li>
+<li><p><strong><code>accident_type</code></strong>: Type of accident (e.g., collision, rollover). This helps categorize the nature of accidents.</p></li>
+<li><p><strong><code>number_of_vehicles_involved</code></strong>: The number of vehicles involved. Useful for analyzing accident severity.</p></li>
+<li><p><strong><code>number_of_fatalities</code></strong>: The number of fatalities in the accident. Important for assessing the severity and impact of accidents.</p></li>
+<li><p><strong><code>number_of_injuries</code></strong>: The number of injuries in the accident. Another key factor for assessing the seriousness of accidents.</p></li>
+<li><p><strong><code>weather_condition</code></strong>: Weather conditions at the time of the accident. Useful for understanding environmental factors affecting accidents.</p></li>
+<li><p><strong><code>latitude</code> and <code>longitude</code></strong>: Coordinates of the accident location. These are crucial for spatial analysis, including mapping accidents and performing spatial joins with road networks.</p></li>
+<li><p><strong><code>road_description</code></strong>: A description of the road (e.g., highway, intersection). Helps in identifying road-specific characteristics linked to accidents.</p></li>
+<li><p><strong><code>slope_description</code></strong>: Description of the slope of the road. Useful for analyzing road conditions that may contribute to accidents.</p></li>
+</ol>
+</div>
+<div id="tabset-1-6" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-6-tab">
+<ul>
+<li><p><strong>Temporal Analysis</strong>: <code>incident_datetime</code> will allow you to analyze patterns based on time (e.g., peak accident times or seasons).</p></li>
+<li><p><strong>Spatial Analysis</strong>: <code>latitude</code> and <code>longitude</code> are essential for mapping the accident locations and performing spatial joins with your roads dataset.</p></li>
+<li><p><strong>Accident Characteristics</strong>: Columns like <code>vehicle_type</code>, <code>presumed_cause</code>, <code>accident_type</code>, and <code>weather_condition</code> help you understand the types of accidents and contributing factors.</p></li>
+<li><p><strong>Severity Indicators</strong>: <code>number_of_fatalities</code> and <code>number_of_injuries</code> help assess the severity of each accident.</p></li>
+<li><p><strong>Road Context</strong>: <code>road_description</code> and <code>slope_description</code> provide additional context on road conditions that may influence accidents.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter the dataset to include only the relevant columns</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>accidents_filtered <span class="ot">&lt;-</span> acc <span class="sc">%&gt;%</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(acc_code, </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>         incident_datetime,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>         Month_num,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>         Month_fac,</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>         dayofweek,</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>         province_en, </span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>         vehicle_type, </span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>         presumed_cause, </span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>         accident_type,</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>         number_of_vehicles_involved, </span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>         number_of_fatalities,</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>         number_of_injuries, </span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>         weather_condition, </span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>         road_description, </span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>         slope_description,</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>         geometry)</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a><span class="co"># View the first few rows of the filtered dataset</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(accidents_filtered)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 6 features and 15 fields
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 386299.4 ymin: 1368107 xmax: 1130617 ymax: 2080805
+Projected CRS: WGS 84 / UTM zone 47N
+# A tibble: 6 × 16
+  acc_code incident_datetime   Month_num Month_fac dayofweek province_en        
+     &lt;dbl&gt; &lt;dttm&gt;                  &lt;dbl&gt; &lt;ord&gt;         &lt;int&gt; &lt;chr&gt;              
+1   571905 2019-01-01 00:00:00         1 Jan               1 Loburi             
+2  3790870 2019-01-01 00:03:00         1 Jan               1 Ubon Ratchathani   
+3   599075 2019-01-01 00:05:00         1 Jan               1 Prachuap Khiri Khan
+4   571924 2019-01-01 00:20:00         1 Jan               1 Chiang Mai         
+5   599523 2019-01-01 00:25:00         1 Jan               1 Nakhon Sawan       
+6   571982 2019-01-01 00:30:00         1 Jan               1 Mae Hong Son       
+# ℹ 10 more variables: vehicle_type &lt;chr&gt;, presumed_cause &lt;chr&gt;,
+#   accident_type &lt;chr&gt;, number_of_vehicles_involved &lt;dbl&gt;,
+#   number_of_fatalities &lt;dbl&gt;, number_of_injuries &lt;dbl&gt;,
+#   weather_condition &lt;chr&gt;, road_description &lt;chr&gt;, slope_description &lt;chr&gt;,
+#   geometry &lt;POINT [m]&gt;</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="importing-thailand-roads-openstreetmap-export" class="level3" data-number="5.2">
+<h3 data-number="5.2" class="anchored" data-anchor-id="importing-thailand-roads-openstreetmap-export"><span class="header-section-number">5.2</span> Importing <a href="https://data.humdata.org/dataset/hotosm_tha_roads">Thailand Roads (OpenStreetMap Export)</a></h3>
+<p>The code chunk below uses&nbsp;<em>st_read()</em>&nbsp;function of&nbsp;<strong>sf</strong>&nbsp;package to import&nbsp;<code>hotosm_tha_roads_lines_shp</code>&nbsp;shapefile into R as a polygon feature data frame.&nbsp;</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Objectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">The code</a></li></ul>
+<div class="tab-content">
+<div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
+<p>The below code uses the following to:</p>
+<ul>
+<li><p><strong><code>st_read()</code></strong>: Reads the Shapefile.</p></li>
+<li><p><strong><code>st_crs()</code></strong>: Checks the CRS of the dataset.</p></li>
+<li><p><strong><code>colSums(is.na(st_drop_geometry()))</code></strong>: Checks for missing values in attribute columns (excluding geometries).</p></li>
+<li><p><strong><code>st_is_valid()</code></strong>: Checks if the geometries are valid.</p></li>
+<li><p><strong><code>st_make_valid()</code></strong>: Cleans invalid geometries if any exist.</p></li>
+<li><p><strong><code>st_transform()</code></strong>: Transforms the dataset to <strong>UTM Zone 47N (EPSG:32647)</strong> for better spatial accuracy in Thailand.</p></li>
+<li><p><strong><code>drop_na()</code></strong>: Removes rows with missing values in attributes.</p></li>
+<li><p><strong><code>summary()</code></strong>: Provides a summary of the cleaned dataset.</p></li>
+</ul>
+</div>
+<div id="tabset-2-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read only necessary columns (adjust column names as needed)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>roads_raw <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"Data/rawdata/hotosm_tha_roads_lines_shp.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `hotosm_tha_roads_lines_shp' from data source 
+  `C:\gniyuy\ISSS626_GA\Take-home_Ex\Take-home_Ex01\Data\rawdata\hotosm_tha_roads_lines_shp.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 2792361 features and 14 fields
+Geometry type: MULTILINESTRING
+Dimension:     XY
+Bounding box:  xmin: 97.34457 ymin: 5.643645 xmax: 105.6528 ymax: 20.47168
+Geodetic CRS:  WGS 84</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check CRS</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_crs</span>(roads_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: WGS 84 
+  wkt:
+GEOGCRS["WGS 84",
+    DATUM["World Geodetic System 1984",
+        ELLIPSOID["WGS 84",6378137,298.257223563,
+            LENGTHUNIT["metre",1]]],
+    PRIMEM["Greenwich",0,
+        ANGLEUNIT["degree",0.0174532925199433]],
+    CS[ellipsoidal,2],
+        AXIS["latitude",north,
+            ORDER[1],
+            ANGLEUNIT["degree",0.0174532925199433]],
+        AXIS["longitude",east,
+            ORDER[2],
+            ANGLEUNIT["degree",0.0174532925199433]],
+    ID["EPSG",4326]]</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for invalid geometries</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>invalid_count <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">st_is_valid</span>(roads_raw))</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of invalid geometries:"</span>, invalid_count))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Number of invalid geometries: 0"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean and transform data</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>roads_cleaned <span class="ot">&lt;-</span> roads_raw <span class="sc">%&gt;%</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>  {<span class="cf">if</span>(invalid_count <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="fu">st_make_valid</span>(.) <span class="cf">else</span> .} <span class="sc">%&gt;%</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Provide a summary of the cleaned dataset</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Summary of the cleaned dataset:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Summary of the cleaned dataset:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(roads_cleaned)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>     name             name_en            highway            surface         
+ Length:2792361     Length:2792361     Length:2792361     Length:2792361    
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+  smoothness           width              lanes              oneway         
+ Length:2792361     Length:2792361     Length:2792361     Length:2792361    
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+    bridge             layer              source            name_th         
+ Length:2792361     Length:2792361     Length:2792361     Length:2792361    
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+     osm_id            osm_type                    geometry      
+ Min.   :4.271e+06   Length:2792361     MULTILINESTRING:2792361  
+ 1st Qu.:5.269e+08   Class :character   epsg:32647     :      0  
+ Median :6.296e+08   Mode  :character   +proj=utm ...  :      0  
+ Mean   :6.896e+08                                               
+ 3rd Qu.:9.353e+08                                               
+ Max.   :1.316e+09                                               </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="importing-thailand---subnational-administrative-boundaries" class="level3" data-number="5.3">
+<h3 data-number="5.3" class="anchored" data-anchor-id="importing-thailand---subnational-administrative-boundaries"><span class="header-section-number">5.3</span> Importing <a href="https://data.humdata.org/dataset/cod-ab-tha?">Thailand - Subnational Administrative Boundaries</a></h3>
+<p>The code chunk below uses&nbsp;<em>st_read()</em>&nbsp;function of&nbsp;<strong>sf</strong>&nbsp;package to import&nbsp;<code>tha_adm_rtsd_itos_20210121_SHP</code>&nbsp;shapefile into R as a polygon feature data frame.&nbsp;</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true">Objectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false">The code</a></li></ul>
+<div class="tab-content">
+<div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
+<p>The below code uses the following to:</p>
+<ul>
+<li><p><strong><code>st_read()</code></strong>: Reads the Shapefile for the administrative boundaries of Thailand</p></li>
+<li><p><strong><code>st_crs()</code></strong>: Checks the Coordinate Reference System of the dataset</p></li>
+<li><p><strong><code>st_geometry_type()</code></strong>: Identifies the geometry type (e.g., polygons, points, etc.)</p></li>
+<li><p><strong><code>st_bbox()</code></strong>: Displays the bounding box (extent) of the dataset</p></li>
+<li><p><strong><code>colSums(is.na(st_drop_geometry()))</code></strong>: Calculates the number of missing values in each attribute column (non-geometry columns)</p></li>
+<li><p><strong><code>st_is_valid()</code></strong>: Checks if there are any invalid geometries in the dataset</p></li>
+<li><p><strong><code>st_make_valid()</code></strong>: Cleans invalid geometries, if any exist</p></li>
+<li><p><strong><code>st_transform(crs = 32647)</code></strong>: Transforms the dataset to <strong>UTM Zone 47N (EPSG:32647)</strong> for spatial accuracy in Thailand</p></li>
+<li><p><strong><code>drop_na()</code></strong>: Removes rows where any attribute columns contain missing values</p></li>
+<li><p><strong><code>summary()</code></strong>: Provides a summary of the final cleaned dataset, including both attribute data and geometries</p></li>
+</ul>
+</div>
+<div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read the data</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_raw <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"Data/rawdata/tha_admbnda_adm2_rtsd_20220121.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Reading layer `tha_admbnda_adm2_rtsd_20220121' from data source 
+  `C:\gniyuy\ISSS626_GA\Take-home_Ex\Take-home_Ex01\Data\rawdata\tha_admbnda_adm2_rtsd_20220121.shp' 
+  using driver `ESRI Shapefile'
+Simple feature collection with 928 features and 19 fields
+Geometry type: MULTIPOLYGON
+Dimension:     XY
+Bounding box:  xmin: 97.34336 ymin: 5.613038 xmax: 105.637 ymax: 20.46507
+Geodetic CRS:  WGS 84</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check Geospatial Properties</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Geospatial Properties:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Geospatial Properties:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_crs</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Coordinate Reference System:
+  User input: WGS 84 
+  wkt:
+GEOGCRS["WGS 84",
+    DATUM["World Geodetic System 1984",
+        ELLIPSOID["WGS 84",6378137,298.257223563,
+            LENGTHUNIT["metre",1]]],
+    PRIMEM["Greenwich",0,
+        ANGLEUNIT["degree",0.0174532925199433]],
+    CS[ellipsoidal,2],
+        AXIS["latitude",north,
+            ORDER[1],
+            ANGLEUNIT["degree",0.0174532925199433]],
+        AXIS["longitude",east,
+            ORDER[2],
+            ANGLEUNIT["degree",0.0174532925199433]],
+    ID["EPSG",4326]]</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_geometry_type</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>  [1] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+  [6] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [11] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [16] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [21] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [26] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [31] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [36] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [41] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [46] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [51] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [56] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [61] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [66] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [71] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [76] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [81] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [86] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [91] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+ [96] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[101] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[106] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[111] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[116] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[121] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[126] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[131] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[136] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[141] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[146] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[151] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[156] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[161] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[166] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[171] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[176] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[181] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[186] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[191] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[196] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[201] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[206] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[211] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[216] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[221] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[226] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[231] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[236] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[241] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[246] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[251] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[256] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[261] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[266] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[271] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[276] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[281] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[286] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[291] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[296] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[301] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[306] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[311] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[316] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[321] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[326] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[331] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[336] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[341] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[346] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[351] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[356] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[361] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[366] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[371] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[376] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[381] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[386] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[391] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[396] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[401] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[406] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[411] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[416] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[421] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[426] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[431] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[436] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[441] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[446] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[451] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[456] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[461] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[466] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[471] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[476] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[481] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[486] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[491] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[496] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[501] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[506] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[511] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[516] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[521] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[526] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[531] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[536] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[541] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[546] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[551] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[556] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[561] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[566] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[571] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[576] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[581] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[586] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[591] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[596] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[601] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[606] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[611] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[616] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[621] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[626] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[631] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[636] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[641] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[646] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[651] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[656] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[661] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[666] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[671] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[676] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[681] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[686] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[691] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[696] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[701] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[706] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[711] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[716] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[721] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[726] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[731] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[736] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[741] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[746] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[751] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[756] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[761] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[766] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[771] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[776] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[781] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[786] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[791] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[796] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[801] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[806] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[811] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[816] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[821] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[826] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[831] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[836] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[841] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[846] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[851] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[856] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[861] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[866] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[871] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[876] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[881] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[886] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[891] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[896] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[901] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[906] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[911] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[916] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[921] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+[926] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
+18 Levels: GEOMETRY POINT LINESTRING POLYGON MULTIPOINT ... TRIANGLE</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_bbox</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>      xmin       ymin       xmax       ymax 
+ 97.343358   5.613038 105.636965  20.465074 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for Invalid Geometries</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>invalid_count <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">st_is_valid</span>(admin_boundaries_raw))</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of invalid geometries:"</span>, invalid_count))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Number of invalid geometries: 0"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean and Transform Data</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_cleaned <span class="ot">&lt;-</span> admin_boundaries_raw <span class="sc">%&gt;%</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>) </span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Provide Summary of the Cleaned Dataset</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Summary of the cleaned dataset:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Summary of the cleaned dataset:"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(admin_boundaries_cleaned)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   Shape_Leng        Shape_Area          ADM2_EN            ADM2_TH         
+ Min.   :0.05123   Min.   :0.0001177   Length:928         Length:928        
+ 1st Qu.:0.86613   1st Qu.:0.0195873   Class :character   Class :character  
+ Median :1.22369   Median :0.0379046   Mode  :character   Mode  :character  
+ Mean   :1.31536   Mean   :0.0467710                                        
+ 3rd Qu.:1.68395   3rd Qu.:0.0629092                                        
+ Max.   :4.34007   Max.   :0.4075191                                        
+  ADM2_PCODE          ADM2_REF          ADM2ALT1EN         ADM2ALT2EN       
+ Length:928         Length:928         Length:928         Length:928        
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+  ADM2ALT1TH         ADM2ALT2TH          ADM1_EN            ADM1_TH         
+ Length:928         Length:928         Length:928         Length:928        
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+  ADM1_PCODE          ADM0_EN            ADM0_TH           ADM0_PCODE       
+ Length:928         Length:928         Length:928         Length:928        
+ Class :character   Class :character   Class :character   Class :character  
+ Mode  :character   Mode  :character   Mode  :character   Mode  :character  
+                                                                            
+                                                                            
+                                                                            
+      date               validOn              validTo          
+ Min.   :2019-02-18   Min.   :2022-01-22   Min.   :-001-11-30  
+ 1st Qu.:2019-02-18   1st Qu.:2022-01-22   1st Qu.:-001-11-30  
+ Median :2019-02-18   Median :2022-01-22   Median :-001-11-30  
+ Mean   :2019-02-18   Mean   :2022-01-22   Mean   :-001-11-30  
+ 3rd Qu.:2019-02-18   3rd Qu.:2022-01-22   3rd Qu.:-001-11-30  
+ Max.   :2019-02-18   Max.   :2022-01-22   Max.   :-001-11-30  
+          geometry  
+ MULTIPOLYGON :928  
+ epsg:32647   :  0  
+ +proj=utm ...:  0  
+                    
+                    
+                    </code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="define-and-filter-bangkok-metropolitan-region-bmr" class="level3" data-number="5.4">
+<h3 data-number="5.4" class="anchored" data-anchor-id="define-and-filter-bangkok-metropolitan-region-bmr"><span class="header-section-number">5.4</span> Define and filter <a href="https://en.wikipedia.org/wiki/Bangkok_Metropolitan_Region">Bangkok Metropolitan Region (BMR)</a></h3>
+<p>The <strong>Bangkok Metropolitan Region (BMR)</strong> consists of six key provinces located in the central part of Thailand. These provinces include:</p>
+<ul>
+<li><p><strong>Bangkok (Metropolis)</strong>,</p></li>
+<li><p><strong>Nonthaburi</strong>,</p></li>
+<li><p><strong>Samut Prakan</strong>,</p></li>
+<li><p><strong>Pathum Thani</strong>,</p></li>
+<li><p><strong>Samut Sakhon</strong>, and</p></li>
+<li><p><strong>Nakhon Pathom</strong>.</p></li>
+</ul>
+<p>Together, these regions represent the most urbanized and densely populated areas in Thailand. Bangkok serves as the central hub, with surrounding provinces supporting residential, commercial, and industrial activities. The BMR plays a crucial role in Thailand’s economy, infrastructure, and governance, making it a significant focal point for urban planning and transportation networks.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># List of provinces in Bangkok Metropolitan Region (BMR)</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>bmr_provinces <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Bangkok"</span>, <span class="st">"Nonthaburi"</span>, <span class="st">"Nakhon Pathom"</span>, <span class="st">"Pathum Thani"</span>, <span class="st">"Samut Prakan"</span>, <span class="st">"Samut Sakhon"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Firstly, let’s filter <code>acc</code> dataset to consist accidents only of BMR provinces.</p>
+<p>Once the filter is applied, we can inspect the filtered dataset using <code>head(accidents_bmr)</code> to verify that only accidents from the BMR provinces are included.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter the accident dataset for only BMR provinces</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>accidents_bmr <span class="ot">&lt;-</span> accidents_filtered <span class="sc">%&gt;%</span></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(province_en <span class="sc">%in%</span> bmr_provinces)</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="co"># View the filtered dataset</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(accidents_bmr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Simple feature collection with 6 features and 15 fields
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 627012.3 ymin: 1502876 xmax: 693488.9 ymax: 1533381
+Projected CRS: WGS 84 / UTM zone 47N
+# A tibble: 6 × 16
+  acc_code incident_datetime   Month_num Month_fac dayofweek province_en  
+     &lt;dbl&gt; &lt;dttm&gt;                  &lt;dbl&gt; &lt;ord&gt;         &lt;int&gt; &lt;chr&gt;        
+1   571882 2019-01-01 02:25:00         1 Jan               1 Nakhon Pathom
+2   600001 2019-01-01 03:00:00         1 Jan               1 Nonthaburi   
+3   605043 2019-01-01 03:00:00         1 Jan               1 Samut Prakan 
+4   629691 2019-01-01 03:05:00         1 Jan               1 Bangkok      
+5   571887 2019-01-01 04:30:00         1 Jan               1 Nakhon Pathom
+6   599234 2019-01-01 04:45:00         1 Jan               1 Samut Prakan 
+# ℹ 10 more variables: vehicle_type &lt;chr&gt;, presumed_cause &lt;chr&gt;,
+#   accident_type &lt;chr&gt;, number_of_vehicles_involved &lt;dbl&gt;,
+#   number_of_fatalities &lt;dbl&gt;, number_of_injuries &lt;dbl&gt;,
+#   weather_condition &lt;chr&gt;, road_description &lt;chr&gt;, slope_description &lt;chr&gt;,
+#   geometry &lt;POINT [m]&gt;</code></pre>
+</div>
+</div>
+<p>In this step, we utilize the <strong>Thailand Administrative Boundaries dataset</strong>, which contains detailed geospatial information for all provinces in Thailand. By applying a filter, the dataset is restricted to the six provinces within the Bangkok Metropolitan Region (BMR). This process ensures that the analysis only focuses on these regions, excluding other areas of Thailand. By isolating the BMR boundaries, further geospatial analyses—such as spatial joins and road infrastructure studies—can be accurately conducted within this concentrated urban zone.</p>
+<p>We verify the class of ‘admin_boundaries_cleaned’.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(admin_boundaries_cleaned)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "sf"         "data.frame"</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter the 'admin_boundaries_cleaned' dataset to keep only BMR provinces</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_bmr <span class="ot">&lt;-</span> admin_boundaries_cleaned <span class="sc">%&gt;%</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ADM1_EN <span class="sc">%in%</span> bmr_provinces)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <strong>Thailand Roads dataset</strong> is a comprehensive geospatial dataset that details the road networks throughout the country. After reading the dataset, a spatial join is performed to integrate the filtered BMR administrative boundaries with the roads data. This spatial join ensures that only the road segments located within the defined BMR boundaries are retained for analysis. This step is crucial for focusing the study on the traffic networks within the Bangkok Metropolitan Region, allowing for specific analyses such as traffic flow, accident-prone areas, and infrastructure planning within the urban and suburban contexts of the BMR.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load necessary libraries</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Create a bounding box for the BMR area</span></span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>bmr_bbox <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(admin_boundaries_bmr)</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Simplify the BMR boundaries for faster processing</span></span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>admin_boundaries_bmr_simplified <span class="ot">&lt;-</span> <span class="fu">st_simplify</span>(admin_boundaries_bmr, <span class="at">dTolerance =</span> <span class="dv">100</span>)</span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Use st_crop to pre-filter roads based on the bounding box (faster)</span></span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>roads_filtered_bbox <span class="ot">&lt;-</span> <span class="fu">st_crop</span>(roads_cleaned, bmr_bbox)</span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Apply st_intersects only to the cropped roads (fewer roads to process)</span></span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>roads_filtered <span class="ot">&lt;-</span> roads_filtered_bbox <span class="sc">%&gt;%</span></span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">apply</span>(<span class="fu">st_intersects</span>(., admin_boundaries_bmr_simplified), <span class="dv">1</span>, any))</span>
+<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Perform the spatial join with the filtered roads</span></span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>roads_bmr <span class="ot">&lt;-</span> <span class="fu">st_join</span>(roads_filtered, admin_boundaries_bmr_simplified, <span class="at">join =</span> st_within, <span class="at">left =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+</section>
+<section id="plotting-the-geospatial-data" class="level2" data-number="6">
+<h2 data-number="6" class="anchored" data-anchor-id="plotting-the-geospatial-data"><span class="header-section-number">6</span> Plotting the Geospatial Data</h2>
+<p>Here’s how to we can plot the <code>accidents_bmr</code>, <code>admin_boundaries_bmr</code>, and <code>roads_bmr</code> using tmap.</p>
+<p>As before, we need to ensure that the <code>accidents_bmr</code>, <code>admin_boundaries_bmr</code>, and <code>roads_bmr</code> datasets are all in the same CRS.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure all datasets have the same CRS</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>crs_target <span class="ot">&lt;-</span> <span class="fu">st_crs</span>(admin_boundaries_bmr)</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the accidents dataset</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>accidents_filtered <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(accidents_filtered, crs_target)</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the roads dataset</span></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>roads_bmr <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(roads_bmr, crs_target)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We can then create a thematic map with <code>tmap</code>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a thematic map using tmap</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(admin_boundaries_bmr) <span class="sc">+</span>           <span class="co"># Add BMR boundaries</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">lwd =</span> <span class="fl">1.5</span>, <span class="at">col =</span> <span class="st">"black"</span>) <span class="sc">+</span>   <span class="co"># Outline for BMR boundaries</span></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(roads_bmr) <span class="sc">+</span>                    <span class="co"># Add roads</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="fl">0.5</span>) <span class="sc">+</span>      <span class="co"># Blue color for roads</span></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(accidents_filtered) <span class="sc">+</span>           <span class="co"># Add accidents as points</span></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"number_of_fatalities"</span>,    <span class="co"># Color by the number of fatalities</span></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"Reds"</span>,                <span class="co"># Use a red palette</span></span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="fl">0.1</span>,                      <span class="co"># Adjust the size of the dots</span></span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">"Fatalities"</span>) <span class="sc">+</span>          <span class="co"># Title for the legend</span></span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">title =</span> <span class="st">"Road Accidents in Bangkok Metropolitan Region (BMR)"</span>,</span>
+<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">legend.outside =</span> <span class="cn">TRUE</span>)         <span class="co"># Layout settings with title and legend outside</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Take-homeExercise1_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
 </div>
 
 

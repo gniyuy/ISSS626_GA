@@ -30,7 +30,7 @@ The objective of this project is to investigate the factors influencing road tra
 
 -   **Conduct spatio-temporal analysis:** Utilize temporal network-based spatial point pattern analysis methods to explore the relationship between accidents and both spatial and temporal factors.
 
-## **The Data**
+## The Data
 
 Three basic data sets are used, they are:
 
@@ -58,13 +58,44 @@ pacman::p_load(sf, spNetwork, tmap, tidyverse)
 
 ## Data Import and Preparation
 
+### Importing [Thailand Road Accident \[2019-2022\]](https://www.kaggle.com/datasets/thaweewatboy/thailand-road-accident-2019-2022)
+
 Since `acc` data set is in csv file format, we will use [*read_csv()*](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package to import `thai_road_accident_2019_2022.csv` as shown the code chunk below. The output R object is called `acc`.
 
-The below code reads in a CSV of traffic accidents, filters out rows with missing coordinates, creates new columns for the month and day of the accidents, converts the dataframe to a spatial object, and then transforms the spatial data to a specific CRS for further geospatial analysis.
+::: panel-tabset
+### Objectives
+
+The below code uses the following to:
+
+-   **`read_csv()`**: This function is used to load the CSV file (`thai_road_accident_2019_2022.csv`) into R. The dataset is stored in a variable called `acc`.
+
+-   **`filter()`**: This function is from the `dplyr` package and is used to filter the rows of the dataset.
+
+-   **`!is.na(longitude) & !is.na(latitude)`**: This condition ensures that only rows where both `longitude` and `latitude` are not missing (`NA`) are kept. Any rows with missing coordinates will be removed.
+
+-   **`mutate()`**: This function is used to create or modify columns in a dataframe
+
+-   **`month(incident_datetime)`**: This function extracts the month from the `incident_datetime` column, and stores it in a new column called `Month_num` (numeric form of the month)
+
+-   **`month(incident_datetime, label = TRUE, abbr = TRUE)`**: This extracts the month in a labeled form, and it will be abbreviated (e.g., "Jan", "Feb"). This is stored in a new column called `Month_fac`
+
+-   **`day(incident_datetime)`**: This extracts the day of the month from the `incident_datetime` column and stores it in a new column called `dayofweek`
+
+-   **`st_as_sf()`**: This function from the `sf` package is used to convert the dataframe to a simple features (spatial) object
+
+-   **`coords = c("longitude", "latitude")`**: This argument tells `st_as_sf()` to use the `longitude` and `latitude` columns to define the spatial coordinates
+
+-   **`crs = 4326`**: This specifies the Coordinate Reference System (CRS) for the spatial object. EPSG:4326 refers to **WGS 84**, which is the standard geographic CRS (latitude and longitude in degrees)
+
+-   **`st_transform()`**: This function is used to reproject the spatial object to a different CRS
+
+-   **`crs = 32647`**: This specifies the target CRS, which is **UTM Zone 47N**. This is a projected CRS that uses meters as units and is more appropriate for spatial analysis in Thailand. EPSG:32647 is commonly used for accurate distance and area measurements in this region
+
+### The code
 
 ```{r}
 acc <- read_csv("Data/rawdata/thai_road_accident_2019_2022.csv") %>%
-  filter(!is.na(longitude) & !is.na(latitude)) %>%   # Filter out rows with missing coordinates
+  filter(!is.na(longitude) & !is.na(latitude)) %>%   # Filter out rows with missing geographic coordinates
   mutate(Month_num = month(incident_datetime)) %>%
   mutate(Month_fac = month(incident_datetime, label = TRUE, abbr = TRUE)) %>%
   mutate(dayofweek = day(incident_datetime)) %>%
@@ -78,4 +109,308 @@ write_rds(acc, "Data/rds/acc.rds")
 
 ```{r}
 acc <- read_rds("Data/rds/acc.rds")
+```
+
+### Missing data check
+
+We can identify rows with missing values by applying *filter()* in combination with *is.na()* to check each column in your dataset. The function *if_any()* checks all columns, and if any of the columns contain *NA*, the corresponding row will be flagged.
+
+```{r}
+# Identify rows with missing values
+acc_incomplete <- acc %>%
+  filter(if_any(everything(), is.na))
+
+# View incomplete rows
+acc_incomplete
+```
+
+### Examine output
+
+After importing the data file into R, it is important for us to examine if the data file has been imported correctly.
+
+The code chunk below shows *summary()* and *list()* of Base R.
+
+```{r}
+summary(acc)
+```
+
+```{r}
+list(acc)
+```
+
+### Selecting relevant columns
+
+1.  **`acc_code`**: Unique identifier for each accident. Useful for tracking individual incidents.
+
+2.  **`incident_datetime`**: Date and time of the accident. Important for temporal analysis (e.g., analyzing accidents by time of day or day of the week).
+
+3.  **`province_en`**: The province where the accident occurred. You’ll need this to filter accidents within the Bangkok Metropolitan Region (BMR).
+
+4.  **`vehicle_type`**: The type of vehicles involved in the accident. This is useful for understanding vehicle-specific trends in accidents.
+
+5.  **`presumed_cause`**: The suspected cause of the accident. This helps with behavioral analysis and understanding the major factors contributing to accidents.
+
+6.  **`accident_type`**: Type of accident (e.g., collision, rollover). This helps categorize the nature of accidents.
+
+7.  **`number_of_vehicles_involved`**: The number of vehicles involved. Useful for analyzing accident severity.
+
+8.  **`number_of_fatalities`**: The number of fatalities in the accident. Important for assessing the severity and impact of accidents.
+
+9.  **`number_of_injuries`**: The number of injuries in the accident. Another key factor for assessing the seriousness of accidents.
+
+10. **`weather_condition`**: Weather conditions at the time of the accident. Useful for understanding environmental factors affecting accidents.
+
+11. **`latitude` and `longitude`**: Coordinates of the accident location. These are crucial for spatial analysis, including mapping accidents and performing spatial joins with road networks.
+
+12. **`road_description`**: A description of the road (e.g., highway, intersection). Helps in identifying road-specific characteristics linked to accidents.
+
+13. **`slope_description`**: Description of the slope of the road. Useful for analyzing road conditions that may contribute to accidents.
+
+### Why These Columns?
+
+-   **Temporal Analysis**: `incident_datetime` will allow you to analyze patterns based on time (e.g., peak accident times or seasons).
+
+-   **Spatial Analysis**: `latitude` and `longitude` are essential for mapping the accident locations and performing spatial joins with your roads dataset.
+
+-   **Accident Characteristics**: Columns like `vehicle_type`, `presumed_cause`, `accident_type`, and `weather_condition` help you understand the types of accidents and contributing factors.
+
+-   **Severity Indicators**: `number_of_fatalities` and `number_of_injuries` help assess the severity of each accident.
+
+-   **Road Context**: `road_description` and `slope_description` provide additional context on road conditions that may influence accidents.
+
+```{r}
+# Filter the dataset to include only the relevant columns
+accidents_filtered <- acc %>%
+  select(acc_code, 
+         incident_datetime,
+         Month_num,
+         Month_fac,
+         dayofweek,
+         province_en, 
+         vehicle_type, 
+         presumed_cause, 
+         accident_type,
+         number_of_vehicles_involved, 
+         number_of_fatalities,
+         number_of_injuries, 
+         weather_condition, 
+         road_description, 
+         slope_description,
+         geometry)
+
+# View the first few rows of the filtered dataset
+head(accidents_filtered)
+```
+:::
+
+### Importing [Thailand Roads (OpenStreetMap Export)](https://data.humdata.org/dataset/hotosm_tha_roads)
+
+The code chunk below uses *st_read()* function of **sf** package to import `hotosm_tha_roads_lines_shp` shapefile into R as a polygon feature data frame. 
+
+::: panel-tabset
+### Objectives
+
+The below code uses the following to:
+
+-   **`st_read()`**: Reads the Shapefile.
+
+-   **`st_crs()`**: Checks the CRS of the dataset.
+
+-   **`colSums(is.na(st_drop_geometry()))`**: Checks for missing values in attribute columns (excluding geometries).
+
+-   **`st_is_valid()`**: Checks if the geometries are valid.
+
+-   **`st_make_valid()`**: Cleans invalid geometries if any exist.
+
+-   **`st_transform()`**: Transforms the dataset to **UTM Zone 47N (EPSG:32647)** for better spatial accuracy in Thailand.
+
+-   **`drop_na()`**: Removes rows with missing values in attributes.
+
+-   **`summary()`**: Provides a summary of the cleaned dataset.
+
+### The code
+
+```{r}
+# Read only necessary columns (adjust column names as needed)
+roads_raw <- st_read("Data/rawdata/hotosm_tha_roads_lines_shp.shp")
+
+# Check CRS
+print(st_crs(roads_raw))
+
+# Check for invalid geometries
+invalid_count <- sum(!st_is_valid(roads_raw))
+print(paste("Number of invalid geometries:", invalid_count))
+
+# Clean and transform data
+roads_cleaned <- roads_raw %>%
+  {if(invalid_count > 0) st_make_valid(.) else .} %>%
+  st_transform(crs = 32647)
+
+# Provide a summary of the cleaned dataset
+print("Summary of the cleaned dataset:")
+summary(roads_cleaned)
+```
+:::
+
+### Importing [Thailand - Subnational Administrative Boundaries](https://data.humdata.org/dataset/cod-ab-tha?)
+
+The code chunk below uses *st_read()* function of **sf** package to import `tha_adm_rtsd_itos_20210121_SHP` shapefile into R as a polygon feature data frame. 
+
+::: panel-tabset
+### Objectives
+
+The below code uses the following to:
+
+-   **`st_read()`**: Reads the Shapefile for the administrative boundaries of Thailand
+
+-   **`st_crs()`**: Checks the Coordinate Reference System of the dataset
+
+-   **`st_geometry_type()`**: Identifies the geometry type (e.g., polygons, points, etc.)
+
+-   **`st_bbox()`**: Displays the bounding box (extent) of the dataset
+
+-   **`colSums(is.na(st_drop_geometry()))`**: Calculates the number of missing values in each attribute column (non-geometry columns)
+
+-   **`st_is_valid()`**: Checks if there are any invalid geometries in the dataset
+
+-   **`st_make_valid()`**: Cleans invalid geometries, if any exist
+
+-   **`st_transform(crs = 32647)`**: Transforms the dataset to **UTM Zone 47N (EPSG:32647)** for spatial accuracy in Thailand
+
+-   **`drop_na()`**: Removes rows where any attribute columns contain missing values
+
+-   **`summary()`**: Provides a summary of the final cleaned dataset, including both attribute data and geometries
+
+### The code
+
+```{r}
+# Read the data
+admin_boundaries_raw <- st_read("Data/rawdata/tha_admbnda_adm2_rtsd_20220121.shp")
+
+# Check Geospatial Properties
+print("Geospatial Properties:")
+print(st_crs(admin_boundaries_raw))
+print(st_geometry_type(admin_boundaries_raw))
+print(st_bbox(admin_boundaries_raw))
+
+# Check for Invalid Geometries
+invalid_count <- sum(!st_is_valid(admin_boundaries_raw))
+print(paste("Number of invalid geometries:", invalid_count))
+
+# Clean and Transform Data
+admin_boundaries_cleaned <- admin_boundaries_raw %>%
+  st_transform(crs = 32647) 
+
+# Provide Summary of the Cleaned Dataset
+print("Summary of the cleaned dataset:")
+summary(admin_boundaries_cleaned)
+```
+:::
+
+### Define and filter [Bangkok Metropolitan Region (BMR)](https://en.wikipedia.org/wiki/Bangkok_Metropolitan_Region)
+
+The **Bangkok Metropolitan Region (BMR)** consists of six key provinces located in the central part of Thailand. These provinces include:
+
+-   **Bangkok (Metropolis)**,
+
+-   **Nonthaburi**,
+
+-   **Samut Prakan**,
+
+-   **Pathum Thani**,
+
+-   **Samut Sakhon**, and
+
+-   **Nakhon Pathom**.
+
+Together, these regions represent the most urbanized and densely populated areas in Thailand. Bangkok serves as the central hub, with surrounding provinces supporting residential, commercial, and industrial activities. The BMR plays a crucial role in Thailand’s economy, infrastructure, and governance, making it a significant focal point for urban planning and transportation networks.
+
+```{r}
+# List of provinces in Bangkok Metropolitan Region (BMR)
+bmr_provinces <- c("Bangkok", "Nonthaburi", "Nakhon Pathom", "Pathum Thani", "Samut Prakan", "Samut Sakhon")
+```
+
+Firstly, let's filter `acc` dataset to consist accidents only of BMR provinces.
+
+Once the filter is applied, we can inspect the filtered dataset using `head(accidents_bmr)` to verify that only accidents from the BMR provinces are included.
+
+```{r}
+# Filter the accident dataset for only BMR provinces
+accidents_bmr <- accidents_filtered %>%
+  filter(province_en %in% bmr_provinces)
+
+# View the filtered dataset
+head(accidents_bmr)
+```
+
+In this step, we utilize the **Thailand Administrative Boundaries dataset**, which contains detailed geospatial information for all provinces in Thailand. By applying a filter, the dataset is restricted to the six provinces within the Bangkok Metropolitan Region (BMR). This process ensures that the analysis only focuses on these regions, excluding other areas of Thailand. By isolating the BMR boundaries, further geospatial analyses—such as spatial joins and road infrastructure studies—can be accurately conducted within this concentrated urban zone.
+
+We verify the class of 'admin_boundaries_cleaned'.
+
+```{r}
+class(admin_boundaries_cleaned)
+```
+
+```{r}
+# Filter the 'admin_boundaries_cleaned' dataset to keep only BMR provinces
+admin_boundaries_bmr <- admin_boundaries_cleaned %>%
+  filter(ADM1_EN %in% bmr_provinces)
+```
+
+The **Thailand Roads dataset** is a comprehensive geospatial dataset that details the road networks throughout the country. After reading the dataset, a spatial join is performed to integrate the filtered BMR administrative boundaries with the roads data. This spatial join ensures that only the road segments located within the defined BMR boundaries are retained for analysis. This step is crucial for focusing the study on the traffic networks within the Bangkok Metropolitan Region, allowing for specific analyses such as traffic flow, accident-prone areas, and infrastructure planning within the urban and suburban contexts of the BMR.
+
+```{r}
+# Load necessary libraries
+library(sf)
+library(dplyr)
+
+# Step 1: Create a bounding box for the BMR area
+bmr_bbox <- st_bbox(admin_boundaries_bmr)
+
+# Step 2: Simplify the BMR boundaries for faster processing
+admin_boundaries_bmr_simplified <- st_simplify(admin_boundaries_bmr, dTolerance = 100)
+
+# Step 3: Use st_crop to pre-filter roads based on the bounding box (faster)
+roads_filtered_bbox <- st_crop(roads_cleaned, bmr_bbox)
+
+# Step 4: Apply st_intersects only to the cropped roads (fewer roads to process)
+roads_filtered <- roads_filtered_bbox %>%
+  filter(apply(st_intersects(., admin_boundaries_bmr_simplified), 1, any))
+
+# Step 5: Perform the spatial join with the filtered roads
+roads_bmr <- st_join(roads_filtered, admin_boundaries_bmr_simplified, join = st_within, left = FALSE)
+```
+
+## Plotting the Geospatial Data
+
+Here’s how to we can plot the `accidents_bmr`, `admin_boundaries_bmr`, and `roads_bmr` using tmap.
+
+As before, we need to ensure that the `accidents_bmr`, `admin_boundaries_bmr`, and `roads_bmr` datasets are all in the same CRS.
+
+```{r}
+# Ensure all datasets have the same CRS
+crs_target <- st_crs(admin_boundaries_bmr)
+
+# Transform the accidents dataset
+accidents_filtered <- st_transform(accidents_filtered, crs_target)
+
+# Transform the roads dataset
+roads_bmr <- st_transform(roads_bmr, crs_target)
+```
+
+We can then create a thematic map with `tmap`.
+
+```{r}
+# Create a thematic map using tmap
+tm_shape(admin_boundaries_bmr) +           # Add BMR boundaries
+  tm_borders(lwd = 1.5, col = "black") +   # Outline for BMR boundaries
+  tm_shape(roads_bmr) +                    # Add roads
+  tm_lines(col = "blue", lwd = 0.5) +      # Blue color for roads
+  tm_shape(accidents_filtered) +           # Add accidents as points
+  tm_dots(col = "number_of_fatalities",    # Color by the number of fatalities
+          palette = "Reds",                # Use a red palette
+          size = 0.1,                      # Adjust the size of the dots
+          title = "Fatalities") +          # Title for the legend
+  tm_layout(title = "Road Accidents in Bangkok Metropolitan Region (BMR)",
+            legend.outside = TRUE)         # Layout settings with title and legend outside
 ```
