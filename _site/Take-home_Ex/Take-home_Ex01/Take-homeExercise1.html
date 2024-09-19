@@ -272,7 +272,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Modified</div>
     <div class="quarto-title-meta-contents">
-      <p class="date-modified">September 18, 2024</p>
+      <p class="date-modified">September 20, 2024</p>
     </div>
   </div>
     
@@ -315,7 +315,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
 <p>Use the code chunk below to install and launch the four R packages.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spNetwork, tmap, tidyverse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>pacman<span class="sc">::</span><span class="fu">p_load</span>(sf, spNetwork, tmap, tidyverse, dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="data-import-and-preparation" class="level2" data-number="5">
@@ -549,13 +549,15 @@ Projected CRS: WGS 84 / UTM zone 47N
 <h3 data-number="5.2" class="anchored" data-anchor-id="importing-thailand-roads-openstreetmap-export"><span class="header-section-number">5.2</span> Importing <a href="https://data.humdata.org/dataset/hotosm_tha_roads">Thailand Roads (OpenStreetMap Export)</a></h3>
 <p>The code chunk below uses&nbsp;<em>st_read()</em>&nbsp;function of&nbsp;<strong>sf</strong>&nbsp;package to import&nbsp;<code>hotosm_tha_roads_lines_shp</code>&nbsp;shapefile into R as a polygon feature data frame.&nbsp;</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Objectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">The code</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-2-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-1" role="tab" aria-controls="tabset-2-1" aria-selected="true">Objectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-2" role="tab" aria-controls="tabset-2-2" aria-selected="false">The code</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-2-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-2-3" role="tab" aria-controls="tabset-2-3" aria-selected="false">Selecting relevant columns</a></li></ul>
 <div class="tab-content">
 <div id="tabset-2-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-2-1-tab">
 <p>The below code uses the following to:</p>
 <ul>
 <li><p><strong><code>st_read()</code></strong>: Reads the Shapefile.</p></li>
 <li><p><strong><code>st_crs()</code></strong>: Checks the CRS of the dataset.</p></li>
+<li><p><strong><code>st_zm()</code></strong>: Removes unnecessary Z and M dimensions</p></li>
+<li><p><strong><code>st_cast()</code></strong>: This function converts the geometries from <strong><code>MULTILINESTRING</code></strong> to <strong><code>LINESTRING</code></strong>, allowing you to handle each line individually.</p></li>
 <li><p><strong><code>colSums(is.na(st_drop_geometry()))</code></strong>: Checks for missing values in attribute columns (excluding geometries).</p></li>
 <li><p><strong><code>st_is_valid()</code></strong>: Checks if the geometries are valid.</p></li>
 <li><p><strong><code>st_make_valid()</code></strong>: Cleans invalid geometries if any exist.</p></li>
@@ -599,9 +601,16 @@ GEOGCRS["WGS 84",
             ANGLEUNIT["degree",0.0174532925199433]],
     ID["EPSG",4326]]</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for invalid geometries</span></span>
-<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>invalid_count <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">st_is_valid</span>(roads_raw))</span>
-<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of invalid geometries:"</span>, invalid_count))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove Z and M dimensions from the roads dataset</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>roads_raw <span class="ot">&lt;-</span> <span class="fu">st_zm</span>(roads_raw, <span class="at">drop =</span> <span class="cn">TRUE</span>, <span class="at">what =</span> <span class="st">"ZM"</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure MULTILINESTRING is converted to LINESTRING</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Explode MULTILINESTRING into individual LINESTRING geometries</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>roads_raw <span class="ot">&lt;-</span> <span class="fu">st_cast</span>(roads_raw, <span class="st">"LINESTRING"</span>, <span class="at">group_or_split =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for invalid geometries</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>invalid_count <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">st_is_valid</span>(roads_raw))</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of invalid geometries:"</span>, invalid_count))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "Number of invalid geometries: 0"</code></pre>
 </div>
@@ -618,34 +627,53 @@ GEOGCRS["WGS 84",
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(roads_cleaned)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>     name             name_en            highway            surface         
- Length:2792361     Length:2792361     Length:2792361     Length:2792361    
+ Length:2792362     Length:2792362     Length:2792362     Length:2792362    
  Class :character   Class :character   Class :character   Class :character  
  Mode  :character   Mode  :character   Mode  :character   Mode  :character  
                                                                             
                                                                             
                                                                             
   smoothness           width              lanes              oneway         
- Length:2792361     Length:2792361     Length:2792361     Length:2792361    
+ Length:2792362     Length:2792362     Length:2792362     Length:2792362    
  Class :character   Class :character   Class :character   Class :character  
  Mode  :character   Mode  :character   Mode  :character   Mode  :character  
                                                                             
                                                                             
                                                                             
     bridge             layer              source            name_th         
- Length:2792361     Length:2792361     Length:2792361     Length:2792361    
+ Length:2792362     Length:2792362     Length:2792362     Length:2792362    
  Class :character   Class :character   Class :character   Class :character  
  Mode  :character   Mode  :character   Mode  :character   Mode  :character  
                                                                             
                                                                             
                                                                             
-     osm_id            osm_type                    geometry      
- Min.   :4.271e+06   Length:2792361     MULTILINESTRING:2792361  
- 1st Qu.:5.269e+08   Class :character   epsg:32647     :      0  
- Median :6.296e+08   Mode  :character   +proj=utm ...  :      0  
- Mean   :6.896e+08                                               
- 3rd Qu.:9.353e+08                                               
- Max.   :1.316e+09                                               </code></pre>
+     osm_id            osm_type                  geometry      
+ Min.   :4.271e+06   Length:2792362     LINESTRING   :2792362  
+ 1st Qu.:5.269e+08   Class :character   epsg:32647   :      0  
+ Median :6.296e+08   Mode  :character   +proj=utm ...:      0  
+ Mean   :6.896e+08                                             
+ 3rd Qu.:9.353e+08                                             
+ Max.   :1.316e+09                                             </code></pre>
 </div>
+</div>
+</div>
+<div id="tabset-2-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-2-3-tab">
+<p>From the columns in <code>roads_cleaned</code> dataset, the following would be most relevant to the project and can be retained:</p>
+<ol type="1">
+<li><p><code>name_en</code>: The English name of the road can be helpful for reference.</p></li>
+<li><p><code>highway</code>: Indicates the road type, which can be essential for understanding traffic and accident patterns.</p></li>
+<li><p><code>surface</code>: Useful to assess the condition of roads.</p></li>
+<li><p><code>lanes</code>: Important for analyzing road capacity and traffic accidents.</p></li>
+<li><p><code>oneway</code>: Indicates whether the road is one-way, which could be relevant to accidents.</p></li>
+<li><p><code>bridge</code>: Useful for identifying structural elements that may influence accident frequency.</p></li>
+<li><p><code>layer</code>: Might be important if there are stacked roads or complex intersections.</p></li>
+<li><p><code>osm_id</code>: Identifier for each road segment (important for spatial joins or linking).</p></li>
+<li><p><code>osm_type</code>: Type of OpenStreetMap object (likely useful for analysis).</p></li>
+<li><p><code>geometry</code>: Necessary for spatial analysis and mapping.</p></li>
+</ol>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>roads_filtered <span class="ot">&lt;-</span> roads_cleaned <span class="sc">%&gt;%</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(name_en, highway, surface, lanes, oneway, bridge, layer, osm_id, osm_type, geometry)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
 </div>
@@ -655,7 +683,7 @@ GEOGCRS["WGS 84",
 <h3 data-number="5.3" class="anchored" data-anchor-id="importing-thailand---subnational-administrative-boundaries"><span class="header-section-number">5.3</span> Importing <a href="https://data.humdata.org/dataset/cod-ab-tha?">Thailand - Subnational Administrative Boundaries</a></h3>
 <p>The code chunk below uses&nbsp;<em>st_read()</em>&nbsp;function of&nbsp;<strong>sf</strong>&nbsp;package to import&nbsp;<code>tha_adm_rtsd_itos_20210121_SHP</code>&nbsp;shapefile into R as a polygon feature data frame.&nbsp;</p>
 <div class="tabset-margin-container"></div><div class="panel-tabset">
-<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true">Objectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false">The code</a></li></ul>
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-3-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-1" role="tab" aria-controls="tabset-3-1" aria-selected="true">Objectives</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-2" role="tab" aria-controls="tabset-3-2" aria-selected="false">The code</a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-3-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-3-3" role="tab" aria-controls="tabset-3-3" aria-selected="false">Selecting relevant columns</a></li></ul>
 <div class="tab-content">
 <div id="tabset-3-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-3-1-tab">
 <p>The below code uses the following to:</p>
@@ -674,8 +702,8 @@ GEOGCRS["WGS 84",
 </div>
 <div id="tabset-3-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-2-tab">
 <div class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read the data</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_raw <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"Data/rawdata/tha_admbnda_adm2_rtsd_20220121.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read the data</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_raw <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">"Data/rawdata/tha_admbnda_adm2_rtsd_20220121.shp"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Reading layer `tha_admbnda_adm2_rtsd_20220121' from data source 
   `C:\gniyuy\ISSS626_GA\Take-home_Ex\Take-home_Ex01\Data\rawdata\tha_admbnda_adm2_rtsd_20220121.shp' 
@@ -686,12 +714,12 @@ Dimension:     XY
 Bounding box:  xmin: 97.34336 ymin: 5.613038 xmax: 105.637 ymax: 20.46507
 Geodetic CRS:  WGS 84</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check Geospatial Properties</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Geospatial Properties:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check Geospatial Properties</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Geospatial Properties:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "Geospatial Properties:"</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_crs</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_crs</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Coordinate Reference System:
   User input: WGS 84 
@@ -711,7 +739,7 @@ GEOGCRS["WGS 84",
             ANGLEUNIT["degree",0.0174532925199433]],
     ID["EPSG",4326]]</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_geometry_type</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_geometry_type</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>  [1] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
   [6] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
@@ -901,27 +929,30 @@ GEOGCRS["WGS 84",
 [926] MULTIPOLYGON MULTIPOLYGON MULTIPOLYGON
 18 Levels: GEOMETRY POINT LINESTRING POLYGON MULTIPOINT ... TRIANGLE</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_bbox</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">st_bbox</span>(admin_boundaries_raw))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>      xmin       ymin       xmax       ymax 
  97.343358   5.613038 105.636965  20.465074 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for Invalid Geometries</span></span>
-<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>invalid_count <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">st_is_valid</span>(admin_boundaries_raw))</span>
-<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of invalid geometries:"</span>, invalid_count))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove Z and M dimensions from the admin boundaries dataset</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_raw <span class="ot">&lt;-</span> <span class="fu">st_zm</span>(admin_boundaries_raw, <span class="at">drop =</span> <span class="cn">TRUE</span>, <span class="at">what =</span> <span class="st">"ZM"</span>)</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Check for Invalid Geometries</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>invalid_count <span class="ot">&lt;-</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">st_is_valid</span>(admin_boundaries_raw))</span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">"Number of invalid geometries:"</span>, invalid_count))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "Number of invalid geometries: 0"</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean and Transform Data</span></span>
-<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_cleaned <span class="ot">&lt;-</span> admin_boundaries_raw <span class="sc">%&gt;%</span></span>
-<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>) </span>
-<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Provide Summary of the Cleaned Dataset</span></span>
-<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Summary of the cleaned dataset:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clean and Transform Data</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_cleaned <span class="ot">&lt;-</span> admin_boundaries_raw <span class="sc">%&gt;%</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">32647</span>) </span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Provide Summary of the Cleaned Dataset</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"Summary of the cleaned dataset:"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "Summary of the cleaned dataset:"</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(admin_boundaries_cleaned)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(admin_boundaries_cleaned)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>   Shape_Leng        Shape_Area          ADM2_EN            ADM2_TH         
  Min.   :0.05123   Min.   :0.0001177   Length:928         Length:928        
@@ -968,8 +999,23 @@ GEOGCRS["WGS 84",
 </div>
 </div>
 </div>
+<div id="tabset-3-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-3-3-tab">
+<p>The following columns that provide information on the administrative area can be retained, such as:</p>
+<ul>
+<li><p><code>ADM2_EN</code> (English name of the second-level administrative boundary)</p></li>
+<li><p><code>ADM1_EN</code> (English name of the first-level boundary, e.g., province)</p></li>
+<li><p><code>ADM0_EN</code> (country name)</p></li>
+<li><p><code>ADM2_PCODE</code> (second-level administrative boundary code)</p></li>
+<li><p><code>geometry</code> (spatial information in MULTIPOLYGON format)</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>admin_boundaries_filtered <span class="ot">&lt;-</span> admin_boundaries_cleaned <span class="sc">%&gt;%</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(ADM2_EN, ADM1_EN, ADM0_EN, ADM2_PCODE, geometry)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </div>
+</div>
+</div>
+<p>:::</p>
 </section>
 <section id="define-and-filter-bangkok-metropolitan-region-bmr" class="level3" data-number="5.4">
 <h3 data-number="5.4" class="anchored" data-anchor-id="define-and-filter-bangkok-metropolitan-region-bmr"><span class="header-section-number">5.4</span> Define and filter <a href="https://en.wikipedia.org/wiki/Bangkok_Metropolitan_Region">Bangkok Metropolitan Region (BMR)</a></h3>
@@ -984,18 +1030,18 @@ GEOGCRS["WGS 84",
 </ul>
 <p>Together, these regions represent the most urbanized and densely populated areas in Thailand. Bangkok serves as the central hub, with surrounding provinces supporting residential, commercial, and industrial activities. The BMR plays a crucial role in Thailand’s economy, infrastructure, and governance, making it a significant focal point for urban planning and transportation networks.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># List of provinces in Bangkok Metropolitan Region (BMR)</span></span>
-<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>bmr_provinces <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Bangkok"</span>, <span class="st">"Nonthaburi"</span>, <span class="st">"Nakhon Pathom"</span>, <span class="st">"Pathum Thani"</span>, <span class="st">"Samut Prakan"</span>, <span class="st">"Samut Sakhon"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="co"># List of provinces in Bangkok Metropolitan Region (BMR)</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>bmr_provinces <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Bangkok"</span>, <span class="st">"Nonthaburi"</span>, <span class="st">"Nakhon Pathom"</span>, <span class="st">"Pathum Thani"</span>, <span class="st">"Samut Prakan"</span>, <span class="st">"Samut Sakhon"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Firstly, let’s filter <code>acc</code> dataset to consist accidents only of BMR provinces.</p>
 <p>Once the filter is applied, we can inspect the filtered dataset using <code>head(accidents_bmr)</code> to verify that only accidents from the BMR provinces are included.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter the accident dataset for only BMR provinces</span></span>
-<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>accidents_bmr <span class="ot">&lt;-</span> accidents_filtered <span class="sc">%&gt;%</span></span>
-<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(province_en <span class="sc">%in%</span> bmr_provinces)</span>
-<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a><span class="co"># View the filtered dataset</span></span>
-<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(accidents_bmr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter the accident dataset for only BMR provinces</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>accidents_bmr <span class="ot">&lt;-</span> accidents_filtered <span class="sc">%&gt;%</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(province_en <span class="sc">%in%</span> bmr_provinces)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a><span class="co"># View the filtered dataset</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(accidents_bmr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Simple feature collection with 6 features and 15 fields
 Geometry type: POINT
@@ -1021,37 +1067,29 @@ Projected CRS: WGS 84 / UTM zone 47N
 <p>In this step, we utilize the <strong>Thailand Administrative Boundaries dataset</strong>, which contains detailed geospatial information for all provinces in Thailand. By applying a filter, the dataset is restricted to the six provinces within the Bangkok Metropolitan Region (BMR). This process ensures that the analysis only focuses on these regions, excluding other areas of Thailand. By isolating the BMR boundaries, further geospatial analyses—such as spatial joins and road infrastructure studies—can be accurately conducted within this concentrated urban zone.</p>
 <p>We verify the class of ‘admin_boundaries_cleaned’.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(admin_boundaries_cleaned)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">class</span>(admin_boundaries_filtered)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] "sf"         "data.frame"</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter the 'admin_boundaries_cleaned' dataset to keep only BMR provinces</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_bmr <span class="ot">&lt;-</span> admin_boundaries_cleaned <span class="sc">%&gt;%</span></span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ADM1_EN <span class="sc">%in%</span> bmr_provinces)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter the 'admin_boundaries_cleaned' dataset to keep only BMR provinces</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>admin_boundaries_bmr <span class="ot">&lt;-</span> admin_boundaries_filtered <span class="sc">%&gt;%</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(ADM1_EN <span class="sc">%in%</span> bmr_provinces)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The <strong>Thailand Roads dataset</strong> is a comprehensive geospatial dataset that details the road networks throughout the country. After reading the dataset, a spatial join is performed to integrate the filtered BMR administrative boundaries with the roads data. This spatial join ensures that only the road segments located within the defined BMR boundaries are retained for analysis. This step is crucial for focusing the study on the traffic networks within the Bangkok Metropolitan Region, allowing for specific analyses such as traffic flow, accident-prone areas, and infrastructure planning within the urban and suburban contexts of the BMR.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load necessary libraries</span></span>
-<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(sf)</span>
-<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Create a bounding box for the BMR area</span></span>
-<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>bmr_bbox <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(admin_boundaries_bmr)</span>
-<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Simplify the BMR boundaries for faster processing</span></span>
-<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>admin_boundaries_bmr_simplified <span class="ot">&lt;-</span> <span class="fu">st_simplify</span>(admin_boundaries_bmr, <span class="at">dTolerance =</span> <span class="dv">100</span>)</span>
-<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Use st_crop to pre-filter roads based on the bounding box (faster)</span></span>
-<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>roads_filtered_bbox <span class="ot">&lt;-</span> <span class="fu">st_crop</span>(roads_cleaned, bmr_bbox)</span>
-<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Apply st_intersects only to the cropped roads (fewer roads to process)</span></span>
-<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>roads_filtered <span class="ot">&lt;-</span> roads_filtered_bbox <span class="sc">%&gt;%</span></span>
-<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">apply</span>(<span class="fu">st_intersects</span>(., admin_boundaries_bmr_simplified), <span class="dv">1</span>, any))</span>
-<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 5: Perform the spatial join with the filtered roads</span></span>
-<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>roads_bmr <span class="ot">&lt;-</span> <span class="fu">st_join</span>(roads_filtered, admin_boundaries_bmr_simplified, <span class="at">join =</span> st_within, <span class="at">left =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 1: Create a bounding box for the BMR area</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>bmr_bbox <span class="ot">&lt;-</span> <span class="fu">st_bbox</span>(admin_boundaries_bmr)</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 2: Simplify the BMR boundaries for faster processing</span></span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>admin_boundaries_bmr_simplified <span class="ot">&lt;-</span> <span class="fu">st_simplify</span>(admin_boundaries_bmr, <span class="at">dTolerance =</span> <span class="dv">100</span>)</span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 3: Use st_crop to pre-filter roads based on the bounding box (faster)</span></span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>roads_filtered_bbox <span class="ot">&lt;-</span> <span class="fu">st_crop</span>(roads_filtered, bmr_bbox)</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Step 4: Perform the spatial join with the filtered roads</span></span>
+<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>roads_bmr <span class="ot">&lt;-</span> <span class="fu">st_join</span>(roads_filtered, admin_boundaries_bmr_simplified, <span class="at">join =</span> st_within, <span class="at">left =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 </section>
@@ -1060,33 +1098,32 @@ Projected CRS: WGS 84 / UTM zone 47N
 <p>Here’s how to we can plot the <code>accidents_bmr</code>, <code>admin_boundaries_bmr</code>, and <code>roads_bmr</code> using tmap.</p>
 <p>As before, we need to ensure that the <code>accidents_bmr</code>, <code>admin_boundaries_bmr</code>, and <code>roads_bmr</code> datasets are all in the same CRS.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure all datasets have the same CRS</span></span>
-<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>crs_target <span class="ot">&lt;-</span> <span class="fu">st_crs</span>(admin_boundaries_bmr)</span>
-<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the accidents dataset</span></span>
-<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>accidents_filtered <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(accidents_filtered, crs_target)</span>
-<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Transform the roads dataset</span></span>
-<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>roads_bmr <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(roads_bmr, crs_target)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>admin_boundaries_bmr <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(admin_boundaries_bmr, <span class="at">crs =</span> <span class="dv">32647</span>)</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>roads_bmr <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(roads_bmr, <span class="at">crs =</span> <span class="dv">32647</span>)</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>accidents_bmr <span class="ot">&lt;-</span> <span class="fu">st_transform</span>(accidents_bmr, <span class="at">crs =</span> <span class="dv">32647</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We can then create a thematic map with <code>tmap</code>.</p>
+<p>To visualise the geospatial data with high cartographic quality and interactive manner, the mapping function of tmap package can be used as shown in the code chunk below.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a thematic map using tmap</span></span>
-<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(admin_boundaries_bmr) <span class="sc">+</span>           <span class="co"># Add BMR boundaries</span></span>
-<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">lwd =</span> <span class="fl">1.5</span>, <span class="at">col =</span> <span class="st">"black"</span>) <span class="sc">+</span>   <span class="co"># Outline for BMR boundaries</span></span>
-<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(roads_bmr) <span class="sc">+</span>                    <span class="co"># Add roads</span></span>
-<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="fl">0.5</span>) <span class="sc">+</span>      <span class="co"># Blue color for roads</span></span>
-<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(accidents_filtered) <span class="sc">+</span>           <span class="co"># Add accidents as points</span></span>
-<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"number_of_fatalities"</span>,    <span class="co"># Color by the number of fatalities</span></span>
-<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"Reds"</span>,                <span class="co"># Use a red palette</span></span>
-<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="fl">0.1</span>,                      <span class="co"># Adjust the size of the dots</span></span>
-<span id="cb47-10"><a href="#cb47-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">"Fatalities"</span>) <span class="sc">+</span>          <span class="co"># Title for the legend</span></span>
-<span id="cb47-11"><a href="#cb47-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">title =</span> <span class="st">"Road Accidents in Bangkok Metropolitan Region (BMR)"</span>,</span>
-<span id="cb47-12"><a href="#cb47-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">legend.outside =</span> <span class="cn">TRUE</span>)         <span class="co"># Layout settings with title and legend outside</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tmap_mode</span>(<span class="st">'plot'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a thematic map with tmap</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">tm_shape</span>(admin_boundaries_bmr_simplified) <span class="sc">+</span>   </span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_borders</span>(<span class="at">lwd =</span> <span class="fl">1.5</span>, <span class="at">col =</span> <span class="st">"black"</span>) <span class="sc">+</span>   </span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(roads_bmr) <span class="sc">+</span>         </span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_lines</span>(<span class="at">col =</span> <span class="st">"blue"</span>, <span class="at">lwd =</span> <span class="fl">0.5</span>) <span class="sc">+</span>     </span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_shape</span>(accidents_bmr) <span class="sc">+</span>         </span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_dots</span>(<span class="at">col =</span> <span class="st">"number_of_fatalities"</span>,    </span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">palette =</span> <span class="st">"Reds"</span>, </span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a>          <span class="at">size =</span> <span class="fl">0.1</span>, </span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a>          <span class="at">title =</span> <span class="st">"Fatalities"</span>) <span class="sc">+</span>             </span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tm_layout</span>(<span class="at">title =</span> <span class="st">"Road Accidents in Bangkok Metropolitan Region (BMR)"</span>,</span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>            <span class="at">legend.outside =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="Take-homeExercise1_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="Take-homeExercise1_files/figure-html/unnamed-chunk-20-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>

@@ -53,7 +53,7 @@ In this exercise, four R packages will be used, they are:
 Use the code chunk below to install and launch the four R packages.
 
 ```{r}
-pacman::p_load(sf, spNetwork, tmap, tidyverse)
+pacman::p_load(sf, spNetwork, tmap, tidyverse, dplyr)
 ```
 
 ## Data Import and Preparation
@@ -216,6 +216,10 @@ The below code uses the following to:
 
 -   **`st_crs()`**: Checks the CRS of the dataset.
 
+-   **`st_zm()`**: Removes unnecessary Z and M dimensions
+
+-   **`st_cast()`**: This function converts the geometries from **`MULTILINESTRING`** to **`LINESTRING`**, allowing you to handle each line individually.
+
 -   **`colSums(is.na(st_drop_geometry()))`**: Checks for missing values in attribute columns (excluding geometries).
 
 -   **`st_is_valid()`**: Checks if the geometries are valid.
@@ -237,6 +241,13 @@ roads_raw <- st_read("Data/rawdata/hotosm_tha_roads_lines_shp.shp")
 # Check CRS
 print(st_crs(roads_raw))
 
+# Remove Z and M dimensions from the roads dataset
+roads_raw <- st_zm(roads_raw, drop = TRUE, what = "ZM")
+
+# Ensure MULTILINESTRING is converted to LINESTRING
+# Explode MULTILINESTRING into individual LINESTRING geometries
+roads_raw <- st_cast(roads_raw, "LINESTRING", group_or_split = TRUE)
+
 # Check for invalid geometries
 invalid_count <- sum(!st_is_valid(roads_raw))
 print(paste("Number of invalid geometries:", invalid_count))
@@ -249,6 +260,35 @@ roads_cleaned <- roads_raw %>%
 # Provide a summary of the cleaned dataset
 print("Summary of the cleaned dataset:")
 summary(roads_cleaned)
+```
+
+### Selecting relevant columns
+
+From the columns in `roads_cleaned` dataset, the following would be most relevant to the project and can be retained:
+
+1.  `name_en`: The English name of the road can be helpful for reference.
+
+2.  `highway`: Indicates the road type, which can be essential for understanding traffic and accident patterns.
+
+3.  `surface`: Useful to assess the condition of roads.
+
+4.  `lanes`: Important for analyzing road capacity and traffic accidents.
+
+5.  `oneway`: Indicates whether the road is one-way, which could be relevant to accidents.
+
+6.  `bridge`: Useful for identifying structural elements that may influence accident frequency.
+
+7.  `layer`: Might be important if there are stacked roads or complex intersections.
+
+8.  `osm_id`: Identifier for each road segment (important for spatial joins or linking).
+
+9.  `osm_type`: Type of OpenStreetMap object (likely useful for analysis).
+
+10. `geometry`: Necessary for spatial analysis and mapping.
+
+```{r}
+roads_filtered <- roads_cleaned %>%
+  select(name_en, highway, surface, lanes, oneway, bridge, layer, osm_id, osm_type, geometry)
 ```
 :::
 
@@ -293,6 +333,9 @@ print(st_crs(admin_boundaries_raw))
 print(st_geometry_type(admin_boundaries_raw))
 print(st_bbox(admin_boundaries_raw))
 
+# Remove Z and M dimensions from the admin boundaries dataset
+admin_boundaries_raw <- st_zm(admin_boundaries_raw, drop = TRUE, what = "ZM")
+
 # Check for Invalid Geometries
 invalid_count <- sum(!st_is_valid(admin_boundaries_raw))
 print(paste("Number of invalid geometries:", invalid_count))
@@ -305,6 +348,27 @@ admin_boundaries_cleaned <- admin_boundaries_raw %>%
 print("Summary of the cleaned dataset:")
 summary(admin_boundaries_cleaned)
 ```
+
+### Selecting relevant columns
+
+The following columns that provide information on the administrative area can be retained, such as:
+
+-   `ADM2_EN` (English name of the second-level administrative boundary)
+
+-   `ADM1_EN` (English name of the first-level boundary, e.g., province)
+
+-   `ADM0_EN` (country name)
+
+-   `ADM2_PCODE` (second-level administrative boundary code)
+
+-   `geometry` (spatial information in MULTIPOLYGON format)
+
+```{r}
+admin_boundaries_filtered <- admin_boundaries_cleaned %>%
+  select(ADM2_EN, ADM1_EN, ADM0_EN, ADM2_PCODE, geometry)
+```
+:::
+
 :::
 
 ### Define and filter [Bangkok Metropolitan Region (BMR)](https://en.wikipedia.org/wiki/Bangkok_Metropolitan_Region)
@@ -348,22 +412,18 @@ In this step, we utilize the **Thailand Administrative Boundaries dataset**, whi
 We verify the class of 'admin_boundaries_cleaned'.
 
 ```{r}
-class(admin_boundaries_cleaned)
+class(admin_boundaries_filtered)
 ```
 
 ```{r}
 # Filter the 'admin_boundaries_cleaned' dataset to keep only BMR provinces
-admin_boundaries_bmr <- admin_boundaries_cleaned %>%
+admin_boundaries_bmr <- admin_boundaries_filtered %>%
   filter(ADM1_EN %in% bmr_provinces)
 ```
 
 The **Thailand Roads dataset** is a comprehensive geospatial dataset that details the road networks throughout the country. After reading the dataset, a spatial join is performed to integrate the filtered BMR administrative boundaries with the roads data. This spatial join ensures that only the road segments located within the defined BMR boundaries are retained for analysis. This step is crucial for focusing the study on the traffic networks within the Bangkok Metropolitan Region, allowing for specific analyses such as traffic flow, accident-prone areas, and infrastructure planning within the urban and suburban contexts of the BMR.
 
 ```{r}
-# Load necessary libraries
-library(sf)
-library(dplyr)
-
 # Step 1: Create a bounding box for the BMR area
 bmr_bbox <- st_bbox(admin_boundaries_bmr)
 
@@ -371,13 +431,9 @@ bmr_bbox <- st_bbox(admin_boundaries_bmr)
 admin_boundaries_bmr_simplified <- st_simplify(admin_boundaries_bmr, dTolerance = 100)
 
 # Step 3: Use st_crop to pre-filter roads based on the bounding box (faster)
-roads_filtered_bbox <- st_crop(roads_cleaned, bmr_bbox)
+roads_filtered_bbox <- st_crop(roads_filtered, bmr_bbox)
 
-# Step 4: Apply st_intersects only to the cropped roads (fewer roads to process)
-roads_filtered <- roads_filtered_bbox %>%
-  filter(apply(st_intersects(., admin_boundaries_bmr_simplified), 1, any))
-
-# Step 5: Perform the spatial join with the filtered roads
+# Step 4: Perform the spatial join with the filtered roads
 roads_bmr <- st_join(roads_filtered, admin_boundaries_bmr_simplified, join = st_within, left = FALSE)
 ```
 
@@ -388,29 +444,30 @@ Here’s how to we can plot the `accidents_bmr`, `admin_boundaries_bmr`, and `ro
 As before, we need to ensure that the `accidents_bmr`, `admin_boundaries_bmr`, and `roads_bmr` datasets are all in the same CRS.
 
 ```{r}
-# Ensure all datasets have the same CRS
-crs_target <- st_crs(admin_boundaries_bmr)
-
-# Transform the accidents dataset
-accidents_filtered <- st_transform(accidents_filtered, crs_target)
-
-# Transform the roads dataset
-roads_bmr <- st_transform(roads_bmr, crs_target)
+admin_boundaries_bmr <- st_transform(admin_boundaries_bmr, crs = 32647)
+roads_bmr <- st_transform(roads_bmr, crs = 32647)
+accidents_bmr <- st_transform(accidents_bmr, crs = 32647)
 ```
 
 We can then create a thematic map with `tmap`.
 
+To visualise the geospatial data with high cartographic quality and interactive manner, the mapping function of tmap package can be used as shown in the code chunk below.
+
 ```{r}
-# Create a thematic map using tmap
-tm_shape(admin_boundaries_bmr) +           # Add BMR boundaries
-  tm_borders(lwd = 1.5, col = "black") +   # Outline for BMR boundaries
-  tm_shape(roads_bmr) +                    # Add roads
-  tm_lines(col = "blue", lwd = 0.5) +      # Blue color for roads
-  tm_shape(accidents_filtered) +           # Add accidents as points
-  tm_dots(col = "number_of_fatalities",    # Color by the number of fatalities
-          palette = "Reds",                # Use a red palette
-          size = 0.1,                      # Adjust the size of the dots
-          title = "Fatalities") +          # Title for the legend
+tmap_mode('plot')
+```
+
+```{r}
+# Create a thematic map with tmap
+tm_shape(admin_boundaries_bmr_simplified) +   
+  tm_borders(lwd = 1.5, col = "black") +   
+  tm_shape(roads_bmr) +         
+  tm_lines(col = "blue", lwd = 0.5) +     
+  tm_shape(accidents_bmr) +         
+  tm_dots(col = "number_of_fatalities",    
+          palette = "Reds", 
+          size = 0.1, 
+          title = "Fatalities") +             
   tm_layout(title = "Road Accidents in Bangkok Metropolitan Region (BMR)",
-            legend.outside = TRUE)         # Layout settings with title and legend outside
+            legend.outside = TRUE)
 ```
