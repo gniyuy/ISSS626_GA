@@ -42,18 +42,80 @@ Three basic data sets are used, they are:
 
 ## Installing and launching the R packages
 
-In this exercise, four R packages will be used, they are:
+In this exercise, the following R packages will be used, they are:
 
--   [spNetwork](https://cran.r-project.org/web/packages/spNetwork/index.html), which provides functions to perform Spatial Point Patterns Analysis such as kernel density estimation (KDE) and K-function on network. It also can be used to build spatial matrices (‘listw’ objects like in ‘spdep’ package) to conduct any kind of traditional spatial analysis with spatial weights based on reticular distances.
+-   **spNetwork**:
 
--   [sf](https://r-spatial.github.io/sf/index.html) package provides functions to manage, processing, and manipulate **Simple Features**, a formal geospatial data standard that specifies a storage and access model of spatial geometries such as points, lines, and polygons.
+    -   `st_network` for converting road networks into an sf object.
 
--   [tmap](https://cran.r-project.org/web/packages/tmap/index.html) which provides functions for plotting cartographic quality static point patterns maps or interactive maps by using [leaflet](https://leafletjs.com/) API.
+    -   `kernel_density` to perform kernel density estimation (KDE) on the network to visualize accident hotspots.
+
+    -   `k_function` to analyze spatial clustering of accidents on the road network.
+
+<!-- -->
+
+-   **sf**:
+
+    -   `st_as_sf()` to convert datasets into spatial features (sf objects) for spatial analysis.
+
+    -   `st_transform()` to transform coordinate reference systems (CRS) for accurate geospatial representation.
+
+    -   `st_join()` to perform spatial joins between two sf objects, such as accident locations and administrative boundaries.
+
+-   **tmap**:
+
+    -   `tm_shape()` to define the spatial layers (e.g., boundaries, roads, accidents).
+
+    -   `tm_fill()` and `tm_borders()` to color and outline the regions (e.g., administrative boundaries).
+
+    -   `tm_dots()` to plot accident points on the map.
+
+    -   `tm_raster()` to add raster layers like kernel density maps.
+
+    -   `tmap_arrange()` to arrange multiple maps into a grid layout.
+
+    -   `tmap_animation()` to create animated time-lapse maps for temporal accident patterns.
+
+-   **tidyverse (dplyr)**:
+
+    -   `filter()` to subset data based on conditions (e.g., accidents on straight roads).
+
+    -   `group_by()` and `summarize()` to aggregate data by specific factors such as road type or weather condition.
+
+    -   `mutate()` to add new columns or modify existing data.
+
+    -   `arrange()` to sort data in ascending or descending order.
+
+-   **spatstat**:
+
+    -   `as.ppp()` to convert sf objects into point pattern format for spatial analysis.
+
+    -   `density()` to perform kernel density estimation (KDE) for accident distribution.
+
+    -   `Kest()` for computing Ripley’s K-function to assess spatial clustering.
+
+-   **raster**:
+
+    -   `raster()` to convert KDE output to raster objects for visual representation on the map.
+
+    -   `writeRaster()` to save raster files for later use or visualization.
+
+-   **ggplot2**:
+
+    -   `ggplot()` to create plots such as heatmaps for visualizing accidents over time.
+
+    -   `geom_tile()` for creating heatmaps.
+
+    -   `scale_fill_gradient()` to apply color gradients in the heatmaps.
+
+-   **gifski**:
+
+    -   `save_gif()` to create and save animated maps or time-lapse visualizations.
 
 Use the code chunk below to install and launch the four R packages.
 
 ```{r}
-pacman::p_load(sf, spNetwork, tmap, tidyverse, dplyr)
+pacman::p_load(sf, spNetwork, tmap, tidyverse, dplyr, spatstat, raster, gifski, ggplot2)
 ```
 
 ## Data Import and Preparation
@@ -181,22 +243,22 @@ list(acc)
 ```{r}
 # Filter the dataset to include only the relevant columns
 accidents_filtered <- acc %>%
-  select(acc_code, 
-         incident_datetime,
-         Month_num,
-         Month_fac,
-         dayofweek,
-         province_en, 
-         vehicle_type, 
-         presumed_cause, 
-         accident_type,
-         number_of_vehicles_involved, 
-         number_of_fatalities,
-         number_of_injuries, 
-         weather_condition, 
-         road_description, 
-         slope_description,
-         geometry)
+  dplyr::select(acc_code,
+                incident_datetime,
+                Month_num,
+                Month_fac,
+                dayofweek,
+                province_en,
+                vehicle_type,
+                presumed_cause,
+                accident_type,
+                number_of_vehicles_involved,
+                number_of_fatalities,
+                number_of_injuries,
+                weather_condition,
+                road_description,
+                slope_description,
+                geometry)
 
 # View the first few rows of the filtered dataset
 head(accidents_filtered)
@@ -288,7 +350,7 @@ From the columns in `roads_cleaned` dataset, the following would be most relevan
 
 ```{r}
 roads_filtered <- roads_cleaned %>%
-  select(name_en, highway, surface, lanes, oneway, bridge, layer, osm_id, osm_type, geometry)
+  dplyr::select(name_en, highway, surface, lanes, oneway, bridge, layer, osm_id, osm_type, geometry)
 ```
 :::
 
@@ -365,7 +427,7 @@ The following columns that provide information on the administrative area can be
 
 ```{r}
 admin_boundaries_filtered <- admin_boundaries_cleaned %>%
-  select(ADM2_EN, ADM1_EN, ADM0_EN, ADM2_PCODE, geometry)
+  dplyr::select(ADM2_EN, ADM1_EN, ADM0_EN, ADM2_PCODE, geometry)
 ```
 :::
 
@@ -409,7 +471,7 @@ head(accidents_bmr)
 
 In this step, we utilize the **Thailand Administrative Boundaries dataset**, which contains detailed geospatial information for all provinces in Thailand. By applying a filter, the dataset is restricted to the six provinces within the Bangkok Metropolitan Region (BMR). This process ensures that the analysis only focuses on these regions, excluding other areas of Thailand. By isolating the BMR boundaries, further geospatial analyses—such as spatial joins and road infrastructure studies—can be accurately conducted within this concentrated urban zone.
 
-We verify the class of 'admin_boundaries_cleaned'.
+We verify the class of 'admin_boundaries_filtered'.
 
 ```{r}
 class(admin_boundaries_filtered)
@@ -451,18 +513,12 @@ accidents_bmr <- st_transform(accidents_bmr, crs = 32647)
 
 We can then create a thematic map with `tmap`.
 
-To visualise the geospatial data with high cartographic quality and interactive manner, the mapping function of tmap package can be used as shown in the code chunk below.
-
-```{r}
-tmap_mode('plot')
-```
-
 ```{r}
 # Create a thematic map with tmap
 tm_shape(admin_boundaries_bmr_simplified) +   
   tm_borders(lwd = 1.5, col = "black") +   
   tm_shape(roads_bmr) +         
-  tm_lines(col = "blue", lwd = 0.5) +     
+  tm_lines(col = "brown", lwd = 0.5) +     
   tm_shape(accidents_bmr) +         
   tm_dots(col = "number_of_fatalities",    
           palette = "Reds", 
@@ -470,4 +526,853 @@ tm_shape(admin_boundaries_bmr_simplified) +
           title = "Fatalities") +             
   tm_layout(title = "Road Accidents in Bangkok Metropolitan Region (BMR)",
             legend.outside = TRUE)
+```
+
+### Spatial Distribution of Road Fatalities in Bangkok Metropolitan Region
+
+To display the number of fatalities in each region, we will calculate the total number of fatalities for each administrative region and then update the map to reflect this in the tm_fill() function. Here's how we can proceed:
+
+**Step 1: Aggregate the number of fatalities per region**
+
+We will group `accident` data by region and sum the number of fatalities for each region.
+
+```{r}
+# Convert to a regular data frame
+accidents_bmr_df <- as.data.frame(accidents_bmr)
+
+# Rename the column
+accidents_bmr_df <- accidents_bmr_df %>%
+  dplyr:::rename.data.frame(ADM1_EN = province_en)
+
+# Convert back to an sf object
+accidents_bmr <- st_as_sf(accidents_bmr_df)
+```
+
+```{r}
+# Aggregate fatalities by region
+fatalities_by_region <- accidents_bmr %>%
+  group_by(ADM1_EN) %>%
+  summarise(total_fatalities = sum(number_of_fatalities, na.rm = TRUE))
+```
+
+**Step 2: Join this aggregated data with your boundaries data**
+
+Next, join the aggregated fatalities data to your BMR boundaries:
+
+```{r}
+# Convert fatalities_by_region to a regular data frame if needed
+fatalities_by_region_df <- as.data.frame(fatalities_by_region)
+
+# Perform a non-spatial left join to join the data with your boundaries
+admin_boundaries_bmr <- admin_boundaries_bmr_simplified %>%
+  left_join(fatalities_by_region_df, by = "ADM1_EN")
+```
+
+**Step 3: Update map to show the number of fatalities**
+
+Now, modify the `tm_fill()` function to reflect the total fatalities in each region:
+
+```{r}
+# Create a thematic map showing the number of fatalities per region
+tm_shape(admin_boundaries_bmr) +
+  tm_fill(col = "total_fatalities",  # Column to display
+          palette = "Reds",          # Color palette
+          title = "Total Fatalities") + # Legend title
+  tm_borders() +
+  tm_shape(accidents_bmr) +
+  tm_dots(size = 0.1, col = "red") +
+  tm_layout(title = "Total Fatalities in BMR",
+            legend.outside = TRUE)
+```
+
+The thematic map produced displays the **total fatalities** across the **BMR**, with the number of fatalities color-coded by region. The red dots represent individual accident locations, and the underlying color gradient indicates the total fatalities aggregated by region.
+
+**Key Observations:**
+
+1.  **High Fatality Regions**:
+
+    -   The northern part of the BMR, particularly regions like **Nonthaburi**, **Nakhon Pathom**, and parts of **Bangkok**, are represented with darker shades of red, indicating these areas have the highest total fatalities, falling within the 150–250 range.
+
+2.  **Moderate Fatality Regions**:
+
+    -   Regions like **Samut Prakan** and parts of **Pathum Thani** show moderate total fatalities, ranging from **100 to 150**.
+
+3.  **Low Fatality Regions**:
+
+    -   The southern regions, such as **Samut Sakhon**, have relatively lower total fatalities, indicated by lighter shades of red.
+
+Let's investigate the underlying causes of road accidents in these regions. Here could be some of the reasons:
+
+-   **Risk Behaviors in Different Travel Modes**: A study conducted in the BMR highlights that different modes of travel, such as motorcycles, cars, and public transportation, carry varying levels of risk perception. Vulnerable road users like pedestrians and cyclists tend to be more aware of risky behaviors than those driving cars or motorcycles. This is crucial since most accidents in Bangkok involve motorcycles, which are more vulnerable to high fatality rates​ ([Structurae](https://structurae.net/en/literature/journal-article/analysis-of-road-users-risk-behaviors-in-different-travel-modes-the-bangkok-metropolitan-region-thailand)).
+
+-   **Weather conditions:** It does have a significant impact on road accidents in the BMR. Rain, in particular, leads to increased risks due to slippery roads and reduced visibility. Heavy rainfall can cause dangerous driving conditions such as hydroplaning and longer braking distances, which lead to higher accident rates. Furthermore, flooding, which is common in Bangkok during monsoon seasons, exacerbates these dangers by making certain roads impassable or more dangerous to navigate, leading to crashes or vehicle damage ([MDPI](https://www.mdpi.com/2412-3811/8/4/79)).
+
+-   **Seasonal Accident Trends**: The number of accidents in Thailand tends to spike during specific periods like the New Year and Songkran festivals. While accident rates have gradually decreased over the years, the high involvement of motorcycles remains a constant challenge. Studies report that nearly 80% of accidents during these peak periods involve motorcycles, further highlighting the vulnerability of two-wheeler users ​([ThaiWebsites](https://www.thaiwebsites.com/caraccidents.asp)).
+
+-   **Contributing Factors**: Key factors like road design, driver behavior, and enforcement of traffic laws play significant roles in accidents. In Bangkok, accidents tend to occur more frequently on straight road sections​ ([ThaiWebsites](https://www.thaiwebsites.com/caraccidents.asp)). This is compounded by driver fatigue, drug use, and reckless driving, which are common causes of accidents​ ([Structurae](https://structurae.net/en/literature/journal-article/analysis-of-road-users-risk-behaviors-in-different-travel-modes-the-bangkok-metropolitan-region-thailand)).
+
+## Visualizing Spatio-Temporal Dynamics of Road Accidents
+
+### Risk Behaviors in Different Travel Modes
+
+**Classify the different travel modes**
+
+-   **Identify modes of transport**: Use the column in your accident data that lists vehicle types (e.g., "vehicle_type").
+
+-   **Filter for key modes**: Extract data for motorcycles, cars, and public transport. This will allow you to isolate accidents involving these different modes of travel.
+
+-   **Geospatial Analysis**: Using the boundaries and road network, spatially analyze where accidents involving motorcycles, cars, and public transport occur. This can highlight spatial patterns of risk behavior for each mode.
+
+Use `filter` in R to classify accidents based on vehicle types:
+
+```{r}
+# Reclassify vehicle types based on the image into distinct categories
+pickup_truck_accidents <- filter(accidents_bmr, vehicle_type %in% c("4-wheel pickup truck", "passenger pickup truck"))
+light_truck_accidents <- filter(accidents_bmr, vehicle_type %in% c("6-wheel truck", "7-10-wheel truck"))
+heavy_truck_accidents <- filter(accidents_bmr, vehicle_type %in% c("large truck with trailer", "tractor/agricultural vehicle"))
+motorcycle_accidents <- filter(accidents_bmr, vehicle_type == "motorcycle")
+car_accidents <- filter(accidents_bmr, vehicle_type %in% c("private/passenger car", "van"))
+bus_accidents <- filter(accidents_bmr, vehicle_type == "large passenger vehicle")
+bicycle_accidents <- filter(accidents_bmr, vehicle_type == "bicycle")
+pedestrian_accidents <- filter(accidents_bmr, vehicle_type == "pedestrian")
+other_accidents <- filter(accidents_bmr, vehicle_type %in% c("motorized tricycle", "other"))
+```
+
+**Identify High-Risk Road Sections:**
+
+-   **Spatial point pattern analysis**: Examine **accident hotspots** for each travel mode using Kernel Density Estimation (KDE). This can reveal high-risk road sections for different travel modes.
+-   **Overlay accidents on road network**: Use the **road data** (e.g., road type, surface quality, width) to analyze how specific road conditions impact accident risk for different modes.
+
+**Car accidents**
+
+```{r}
+#| eval: false
+# Ensure Car accidents are an sf object
+car_accidents_sf <- st_as_sf(car_accidents)
+
+tm_shape(admin_boundaries_bmr_simplified) +  # BMR boundaries
+  tm_borders(lwd = 1.5, col = "black") +  # Add borders for the regions
+  tm_fill(col = "ADM1_EN", palette = "Set3", title = "BMR Regions") +  # Fill regions by name
+  tm_shape(car_accidents_sf) +  # Add car accident points
+  tm_dots(col = "red", size = 0.1) +  # Red dots for accident locations
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +  
+  tm_layout(title = "Car Accident in BMR", legend.outside = TRUE)  # Layout settings
+```
+
+**Pickup Truck accidents**
+
+```{r}
+#| eval: false
+# Ensure Pickup Truck accidents are an sf object
+pickup_truck_accidents_sf <- st_as_sf(pickup_truck_accidents)
+
+tm_shape(admin_boundaries_bmr_simplified) +  # BMR boundaries
+  tm_borders(lwd = 1.5, col = "black") +  # Add borders for the regions
+  tm_fill(col = "ADM1_EN", palette = "Set3", title = "BMR Regions") +  # Fill regions by name
+  tm_shape(pickup_truck_accidents_sf) +  # Add pick up truck accident points
+  tm_dots(col = "red", size = 0.1) +  # Red dots for accident locations
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +  
+  tm_layout(title = "Pickup Truck Accident in BMR", legend.outside = TRUE)  # Layout settings
+```
+
+**Motorcycle accidents**
+
+```{r}
+#| eval: false
+# Ensure motorcycle accidents are an sf object
+motorcycle_accidents_sf <- st_as_sf(motorcycle_accidents)
+
+tm_shape(admin_boundaries_bmr_simplified) +  # BMR boundaries
+  tm_borders(lwd = 1.5, col = "black") +  # Add borders for the regions
+   tm_fill(col = "ADM1_EN", palette = "Set3", title = "BMR Regions") +  # Fill regions by name
+  tm_shape(motorcycle_accidents_sf) +  # Add motorcycle accident points
+  tm_dots(col = "red", size = 0.1) +  # Red dots for accident locations
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +  
+  tm_layout(title = "Motorcycle Accident in BMR", legend.outside = TRUE)  # Layout settings
+```
+
+The analysis of the top three vehicle types involved in accidents in the BMR is as follows:
+
+1.  **Cars**:
+
+    -   Private or passenger cars constitute the largest portion of vehicles involved in accidents. This finding is consistent with the high prevalence of private cars on the road. In urban environments like Bangkok, car congestion, driver distractions, and speeding could all contribute to the higher accident rate. The dense traffic conditions and complex road networks, including narrow streets and frequent intersections, could lead to a higher likelihood of collisions involving passenger vehicles.
+
+2.  **Pickup Truck accidents**:
+
+    -   Pickup trucks come in second. Pickup trucks are popular for both personal and commercial use in Thailand, making them a significant part of road traffic. Their larger size compared to private cars can also be a factor in more severe accidents, particularly in high-speed zones or when maneuvering through tight urban roads. Furthermore, the high usage of pickup trucks for goods transportation, often overloaded, can increase risks, especially on highways or rural roads leading into the metropolitan area.
+
+3.  **Motorcycles**:
+
+    -   Motorcycles rank third. Despite being the third most common type in the dataset, motorcycles are particularly vulnerable due to the lack of protective barriers for the driver and passengers. In many cases, motorcycle accidents result in higher fatality rates compared to cars or trucks. The high number of motorcycles on the road in Bangkok, combined with factors like weaving through traffic, poor visibility in certain weather conditions, and risky driving behavior, may explain their high involvement in road accidents.
+
+The dominance of private cars, pickup trucks, and motorcycles in accident statistics underscores the need for targeted safety measures. For private cars and pickup trucks, enhancing road infrastructure, promoting safer driving practices, and enforcing traffic laws are essential. For motorcycles, encouraging the use of protective gear, increasing awareness about the dangers of risky driving behaviors, and developing safer motorcycle lanes could help reduce accidents and fatalities. Additionally, analyzing accident hotspots and times (such as peak traffic hours) could provide insights for reducing accident rates among these top vehicle types.
+
+### Weather conditions
+
+#### Spatial Distribution by Weather Condition
+
+We overlay traffic accidents filtered by weather conditions (clear, dark, rainy, etc.) on the BMR map, showing which regions experience higher fatalities or injuries under different weather conditions.
+
+-   **Use filtering**: Filter accidents by weather conditions in your dataset.
+
+-   **Dot maps**: Overlay dots representing accidents on the BMR map, colored by weather condition.
+
+**By number of accidents**
+
+```{r}
+#| eval: false
+# Filter accidents based on weather conditions
+clear_accidents <- filter(accidents_bmr, weather_condition == "clear")
+rainy_accidents <- filter(accidents_bmr, weather_condition == "rainy")
+dark_accidents <- filter(accidents_bmr, weather_condition == "dark")
+foggy_accidents <- filter(accidents_bmr, weather_condition == "foggy")
+landslide_accidents <- filter(accidents_bmr, weather_condition == "land slide")
+natural_disaster_accidents <- filter(accidents_bmr, weather_condition == "natural disaster")
+other_accidents <- filter(accidents_bmr, weather_condition == "other")
+
+# Create map combining regions, roads, and weather conditions
+tm_shape(admin_boundaries_bmr_simplified) + 
+  # Fill regions by name
+  tm_fill(col = "ADM1_EN", palette = "Set3", title = "BMR Regions") + 
+  tm_borders() + 
+  
+  # Add roads
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +
+  
+  # Plot accidents for each weather condition with different colors
+  tm_shape(clear_accidents) +
+  tm_dots(col = "blue", size = 0.1, alpha = 0.7) +
+  
+  tm_shape(rainy_accidents) +
+  tm_dots(col = "red", size = 0.1, alpha = 0.7) +
+  
+  tm_shape(dark_accidents) +
+  tm_dots(col = "black", size = 0.1, alpha = 0.7) +
+  
+  tm_shape(foggy_accidents) +
+  tm_dots(col = "purple", size = 0.1, alpha = 0.7) +
+  
+  tm_shape(landslide_accidents) +
+  tm_dots(col = "green", size = 0.1, alpha = 0.7) +
+  
+  tm_shape(natural_disaster_accidents) +
+  tm_dots(col = "orange", size = 0.1, alpha = 0.7) +
+  
+  tm_shape(other_accidents) +
+  tm_dots(col = "yellow", size = 0.1, alpha = 0.7) +
+  
+  # Add a custom legend for weather conditions
+  tm_add_legend(type = "symbol",
+                col = c("blue", "red", "black", "purple", "green", "orange", "yellow"),
+                labels = c("Clear", "Rainy", "Dark", "Foggy", "Landslide", "Natural Disaster", "Other"),
+                title = "Weather Conditions") +
+  
+  # Layout settings
+  tm_layout(title = "Traffic Accidents by Weather in BMR with Regions and Roads", 
+            legend.outside = TRUE,
+            legend.outside.position = "right")
+```
+
+**By number of fatalities**
+
+```{r}
+#| eval: false
+# Create map for fatalities
+tm_shape(admin_boundaries_bmr_simplified) + 
+  # Fill regions by name
+  tm_fill(col = "ADM1_EN", palette = "Set3", title = "BMR Regions") + 
+  tm_borders() + 
+  
+  # Add roads
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) + 
+
+  # Plot accidents with fatalities for each weather condition
+  tm_shape(clear_accidents) +
+  tm_dots(size = "number_of_fatalities", col = "blue", title = "Clear Weather (Fatalities)") +
+  
+  tm_shape(rainy_accidents) +
+  tm_dots(size = "number_of_fatalities", col = "red", title = "Rainy Weather (Fatalities)") +
+  
+  tm_shape(dark_accidents) +
+  tm_dots(size = "number_of_fatalities", col = "black", title = "Dark Weather (Fatalities)") +
+  
+  tm_shape(foggy_accidents) +
+  tm_dots(size = "number_of_fatalities", col = "purple", title = "Foggy Weather (Fatalities)") +
+  
+  tm_shape(landslide_accidents) +
+  tm_dots(size = "number_of_fatalities", col = "green", title = "Landslide Weather (Fatalities)") +
+  
+  tm_shape(natural_disaster_accidents) +
+  tm_dots(size = "number_of_fatalities", col = "orange", title = "Natural Disaster (Fatalities)") +
+
+  tm_shape(other_accidents) +
+  tm_dots(size = "number_of_fatalities", col = "yellow", title = "Other Weather (Fatalities)") +
+  
+  # Add a custom legend for weather conditions
+  tm_add_legend(type = "symbol",
+                col = c("blue", "red", "black", "purple", "green", "orange", "yellow"),
+                labels = c("Clear", "Rainy", "Dark", "Foggy", "Landslide", "Natural Disaster", "Other"),
+                title = "Weather Conditions") +
+  
+  # Layout settings
+  tm_layout(title = "Fatalities by Weather in BMR with Regions and Roads", 
+            legend.outside = TRUE,
+            legend.outside.position = "right")
+```
+
+**By number of injuries**
+
+```{r}
+#| eval: false
+# Create map for injuries
+tm_shape(admin_boundaries_bmr_simplified) + 
+  # Fill regions by name
+  tm_fill(col = "ADM1_EN", palette = "Set3", title = "BMR Regions") + 
+  tm_borders() + 
+  
+  # Add roads
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) + 
+
+  # Plot accidents with injuries for each weather condition
+  tm_shape(clear_accidents) +
+  tm_dots(size = "number_of_injuries", col = "blue", title = "Clear Weather (Injuries)") +
+  
+  tm_shape(rainy_accidents) +
+  tm_dots(size = "number_of_injuries", col = "red", title = "Rainy Weather (Injuries)") +
+  
+  tm_shape(dark_accidents) +
+  tm_dots(size = "number_of_injuries", col = "black", title = "Dark Weather (Injuries)") +
+  
+  tm_shape(foggy_accidents) +
+  tm_dots(size = "number_of_injuries", col = "purple", title = "Foggy Weather (Injuries)") +
+  
+  tm_shape(landslide_accidents) +
+  tm_dots(size = "number_of_injuries", col = "green", title = "Landslide Weather (Injuries)") +
+  
+  tm_shape(natural_disaster_accidents) +
+  tm_dots(size = "number_of_injuries", col = "orange", title = "Natural Disaster (Injuries)") +
+
+  tm_shape(other_accidents) +
+  tm_dots(size = "number_of_injuries", col = "yellow", title = "Other Weather (Injuries)") +
+
+  # Add a custom legend for weather conditions
+  tm_add_legend(type = "symbol",
+                col = c("blue", "red", "black", "purple", "green", "orange", "yellow"),
+                labels = c("Clear", "Rainy", "Dark", "Foggy", "Landslide", "Natural Disaster", "Other"),
+                title = "Weather Conditions") +
+  
+  # Layout settings
+  tm_layout(title = "Fatalities by Weather in BMR with Regions and Roads", 
+            legend.outside = TRUE,
+            legend.outside.position = "right")
+```
+
+#### Temporal Analysis
+
+We analyze how the frequency of accidents varies across different times of day, months, or years for various weather conditions. This can be achieved by:
+
+-   **Aggregating accident data by time period** (hour, day, month, year) and weather condition.
+
+-   **Time-series plots**: Create time-series plots for each weather condition, showing the number of accidents over time.
+
+-   **Heatmaps**: Visualize accident frequencies across different times of day and months.
+
+**Step 1: Aggregating Accident Data by Time Period and Weather Condition**
+
+We can aggregate the accident data by different time period such as hour, day, month, or year, and by weather condition.
+
+```{r}
+# Aggregate data by month and weather condition
+accidents_by_month_weather <- accidents_bmr %>%
+  dplyr:::group_by.data.frame(Month_num, Month_fac, weather_condition) %>%
+  summarise(total_fatalities = sum(number_of_fatalities, na.rm = TRUE),
+            total_injuries = sum(number_of_injuries, na.rm = TRUE))
+
+# Aggregate by hour and weather condition
+accidents_by_hour_weather <- accidents_bmr %>%
+  mutate(hour = lubridate::hour(incident_datetime)) %>%
+  group_by(hour, weather_condition) %>%
+  summarise(total_fatalities = sum(number_of_fatalities, na.rm = TRUE),
+            total_injuries = sum(number_of_injuries, na.rm = TRUE))
+```
+
+**Step 2: Time-Series Plots for Each Weather Condition**
+
+We can create time-series plots to visualize the number of accidents over time (for instance, by hour or month).
+
+```{r}
+# Time-series plot of accidents by month and weather condition
+ggplot(accidents_by_month_weather, aes(x = Month_num, y = total_fatalities, color = weather_condition, group = weather_condition)) +
+  geom_line() +
+  labs(title = "Monthly Accidents by Weather Condition",
+       x = "Month", y = "Number of Fatalities") +
+  scale_x_continuous(breaks = 1:12, labels = unique(accidents_by_month_weather$Month)) +
+  theme_minimal()
+```
+
+**Step 3: Heatmaps to Visualize Accident Frequencies**
+
+We can create heatmaps to visualize accident frequencies across different times of day and months.
+
+```{r}
+# Heatmap of accidents by hour and weather condition
+ggplot(accidents_by_hour_weather, aes(x = hour, y = weather_condition, fill = total_fatalities)) +
+  geom_tile() +
+  labs(title = "Accidents by Hour and Weather Condition",
+       x = "Hour", y = "Weather Condition", fill = "Fatalities") +
+  scale_fill_viridis_c(option = "C") +
+  theme_minimal()
+```
+
+#### Combining Spatial & Temporal Analysis
+
+Below shows how accidents evolve spatially over time under different weather conditions:
+
+Ensure the dataset includes a **temporal** component (e.g., month, year) and spatial geometry (`sf` object). You can modify your existing `accidents_bmr` dataset if it's not already in the correct format.
+
+```{r}
+# Convert 'incident_datetime' to date format if not already
+accidents_bmr <- accidents_bmr %>%
+  mutate(incident_datetime = as.POSIXct(incident_datetime, format = "%m/%d/%Y %H:%M"))
+
+# Add a 'month_year' column for easier temporal analysis
+accidents_bmr <- accidents_bmr %>%
+  mutate(month_year = format(incident_datetime, "%Y-%m"))
+
+# Ensure that the dataset is an sf object
+accidents_bmr_sf <- st_as_sf(accidents_bmr, coords = c("longitude", "latitude"), crs = 4326)
+```
+
+We can set up `tmap_animation()` to visualize the accident data across months or years while factoring in weather conditions.
+
+```{r}
+# Switch to view mode for interactive animations 
+tmap_mode("view")
+
+# Create the animated map
+tmap_animation(
+  tm_shape(accidents_bmr_sf) +  # Load accident data as sf object
+  tm_dots(col = "weather_condition", palette = "Set1", size = 0.1, title = "Weather Conditions") +
+  tm_facets(along = "month_year", free.coords = FALSE) +  # Create facets by month-year
+  tm_shape(admin_boundaries_bmr) +  # Add BMR boundaries
+  tm_borders(lwd = 1, col = "black") +  # Add boundaries outline
+  tm_layout(title = "Accident Distribution Over Time by Weather Conditions in BMR",
+            legend.outside = TRUE),  # Layout settings for the map
+  filename = "accidents_bmr_animation.gif",  # Save as gif
+  width = 800, height = 600, delay = 60  # Define gif size and frame delay
+)
+```
+
+![](accidents_bmr_animation.gif)
+
+From the analysis of the weather conditions and accidents in the BMR, we can observe a significant difference in the number of accidents under different weather conditions:
+
+1.  **Clear Weather**:
+
+    -   The vast majority of accidents, approximately 11,711 incidents, occur under clear weather conditions.
+
+    -   This indicates that even in optimal weather conditions with clear visibility and road conditions, accidents are still prevalent.
+
+    -   The map shows widespread distribution of these accidents across all regions of the BMR, with a noticeable concentration along major road networks and urban areas like Bangkok. The high volume of traffic and higher speed limits during clear weather may contribute to the increased number of accidents.
+
+2.  **Rainy Weather**:
+
+    -   The second most common weather condition associated with accidents is rainy weather, with 1,166 incidents.
+
+    -   Rain increases the risk of accidents due to factors such as reduced visibility, slippery roads, and longer stopping distances.
+
+    -   The map shows clusters of accidents during rainy weather, particularly along major highways and arterial roads. Regions like Pathum Thani and Samut Prakan appear to have a higher density of accidents in rainy conditions, which may be due to the poor drainage systems or high traffic flow.
+
+**Comparison:**
+
+-   **Clear vs. Rainy Conditions**:
+
+    -   While clear weather accounts for more accidents due to the higher volume of vehicles on the road and possibly higher speeds, rainy conditions present their own hazards. The number of accidents during rain, while lower, still shows that driving in adverse weather remains a significant risk factor, especially in certain regions.
+
+    -   Both conditions demonstrate the importance of maintaining road safety awareness regardless of weather, but special caution is needed during rain, as visibility and road conditions deteriorate.
+
+**Key Takeaways:**
+
+-   In clear weather, driver behavior such as speeding and not paying attention may be primary factors for accidents.
+
+-   In rainy weather, the road conditions become more challenging, and accidents might result from hydroplaning, reduced grip on the road, or poor visibility. It's important to enforce road safety laws and awareness campaigns to reduce accidents in both conditions.
+
+The map visualizes how accidents are distributed based on weather conditions, helping to understand areas where interventions (like better road design or stricter enforcement) may be needed to reduce the risks.
+
+### Seasonal Accident Trends Analysis (New Year and Songkran Festivals)
+
+#### **Filter Accident Data for New Year and Songkran:**
+
+We define the periods for the New Year and Songkran festivals in the dataset, then filter accidents that occurred during those times. The New Year generally spans from the 31st of December to the 2nd of January, and Songkran typically runs from the 13th to the 15th of April.
+
+```{r}
+# Define New Year and Songkran periods
+new_year_period <- c("12-31", "01-01", "01-02")
+songkran_period <- c("04-13", "04-14", "04-15")
+
+# Convert incident_datetime to Date format and extract the month-day part for comparison
+accidents_bmr$month_day <- format(as.Date(accidents_bmr$incident_datetime), "%m-%d")
+
+# Filter for New Year accidents
+new_year_accidents <- accidents_bmr %>% 
+  filter(month_day %in% new_year_period)
+
+# Filter for Songkran accidents
+songkran_accidents <- accidents_bmr %>% 
+  filter(month_day %in% songkran_period)
+
+# Combine both festivals
+festival_accidents <- bind_rows(new_year_accidents, songkran_accidents)
+
+# Summary statistics for both festivals
+festival_summary <- festival_accidents %>%
+  group_by(vehicle_type) %>%
+  summarise(fatalities = sum(number_of_fatalities, na.rm = TRUE),
+            injuries = sum(number_of_injuries, na.rm = TRUE))
+```
+
+#### **Visualizing Accident Trends:**
+
+You can create time-series plots to analyze accident trends during New Year and Songkran festivals for various vehicle types, particularly motorcycles, which are more involved in accidents during these periods.
+
+```{r}
+# Visualizing the time series trend of accidents during festivals by vehicle type
+
+library(ggplot2)
+
+ggplot(festival_accidents, aes(x = incident_datetime, fill = vehicle_type)) +
+  geom_histogram(binwidth = 86400) + # binwidth of one day
+  labs(title = "Accident Trends During New Year and Songkran Festivals",
+       x = "Date",
+       y = "Number of Accidents") +
+  theme_minimal() +
+  facet_wrap(~ vehicle_type)
+```
+
+#### **Heatmaps for Time of Day or Day of Week:**
+
+A heatmap can show accident frequencies during different times of the day or days of the week for these festival periods.
+
+```{r}
+# Ensure incident_datetime is properly formatted and extract hour and day
+festival_accidents$hour <- format(as.POSIXct(festival_accidents$incident_datetime), "%H")
+festival_accidents$day <- format(as.POSIXct(festival_accidents$incident_datetime), "%A")
+
+# Convert hour and day to factors (if necessary)
+festival_accidents$hour <- as.factor(festival_accidents$hour)
+festival_accidents$day <- as.factor(festival_accidents$day)
+
+# Create a summary data frame with counts
+accident_summary <- festival_accidents %>%
+  group_by(hour, day) %>%
+  summarise(count = n(), .groups = 'drop')
+
+# Create the heatmap
+ggplot(accident_summary, aes(x = hour, y = day, fill = count)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "lightblue", high = "darkblue") +
+  labs(title = "Accident Heatmap by Hour and Day During New Year and Songkran",
+       x = "Hour of the Day",
+       y = "Day of the Week",
+       fill = "Number of Accidents") +
+  theme_minimal()
+```
+
+#### **Mapping the Accidents (Spatial Distribution):**
+
+To analyze spatial trends during the festivals, we map the accidents for New Year and Songkran festivals using tmap:
+
+```{r}
+# Visualize the accidents during festivals on a map
+tm_shape(admin_boundaries_bmr_simplified) + 
+  tm_polygons() + 
+  tm_shape(festival_accidents) +
+  tm_dots(col = "vehicle_type", palette = "Set1", title = "Vehicle Type") +
+  tm_layout(title = "Accidents During Festivals (New Year & Songkran) in BMR")
+```
+
+### Other Contributing Factors
+
+#### Road Design Analysis
+
+Here's how we can prepare, filter, and aggregate the accident data by road description, followed by combining this analysis with fatalities and injuries for each type of road.
+
+**Step 1: Aggregate Fatalities and Injuries by Road Type**
+
+Now, aggregate the number of fatalities and injuries for each type of road, similar to the table you shared.
+
+```{r}
+# Aggregate fatalities and injuries by road type
+road_aggregated <- accidents_bmr %>%
+  group_by(road_description) %>%
+  summarise(total_fatalities = sum(number_of_fatalities, na.rm = TRUE),
+            total_injuries = sum(number_of_injuries, na.rm = TRUE)) %>%
+  arrange(desc(total_fatalities))
+
+# View the aggregated data
+print(road_aggregated)
+```
+
+**Step 2: Visualize Accident Hotspots on Different Road Types**
+
+For visualization, we can use **kernel density estimation (KDE)** and **spatial analysis** to show accident hotspots and how they are distributed across different road types like straight roads, intersections, etc.
+
+This display the density on a map, with red dots representing accident locations on straight roads within the BMR.
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "straight road")) +
+  tm_dots(col = "red", size = 0.1, title = "Straight Road Accidents") +
+  tm_layout(title = "Accidents on Straight Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "sharp curve")) +
+  tm_dots(col = "blue", size = 0.1, title = "Sharp Curve Accidents") +
+  tm_layout(title = "Accidents on Sharp Curves", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "roundabout")) +
+  tm_dots(col = "green", size = 0.1, title = "Roundabout Accidents") +
+  tm_layout(title = "Accidents on Roundabouts", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "connecting to private area")) +
+  tm_dots(col = "yellow", size = 0.1, title = "Accidents on Private Area Roads") +
+  tm_layout(title = "Accidents on Private Area Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "connecting to public/commercial area")) +
+  tm_dots(col = "purple", size = 0.1, title = "Accidents on Public/Commercial Roads") +
+  tm_layout(title = "Accidents on Public/Commercial Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "connecting to school area")) +
+  tm_dots(col = "orange", size = 0.1, title = "Accidents on School Roads") +
+  tm_layout(title = "Accidents on School Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "four-way intersection")) +
+  tm_dots(col = "pink", size = 0.1, title = "Four-way Intersection Accidents") +
+  tm_layout(title = "Accidents on Four-way Intersections", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "grade-separated intersection/ramps")) +
+  tm_dots(col = "cyan", size = 0.1, title = "Grade-separated Intersection/Ramps Accidents") +
+  tm_layout(title = "Accidents on Grade-separated Intersections", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "merge lane")) +
+  tm_dots(col = "magenta", size = 0.1, title = "Merge Lane Accidents") +
+  tm_layout(title = "Accidents on Merge Lanes", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "t-intersection")) +
+  tm_dots(col = "green", size = 0.1, title = "T-intersection Accidents") +
+  tm_layout(title = "Accidents on T-intersections", legend.outside = TRUE)
+```
+
+```{r}
+#| echo: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(filter(accidents_bmr, road_description == "y-intersection")) +
+  tm_dots(col = "blue", size = 0.1, title = "Y-intersection Accidents") +
+  tm_layout(title = "Accidents on Y-intersections", legend.outside = TRUE)
+```
+
+```{r}
+# Filter for specific road types, e.g., straight roads
+straight_road_accidents <- accidents_bmr %>%
+  filter(road_description == "straight road")
+
+# Convert to a spatial object
+straight_road_accidents_sf <- st_as_sf(straight_road_accidents)
+
+# Ensure the CRS is set correctly
+st_crs(straight_road_accidents_sf) <- st_crs(admin_boundaries_bmr_simplified)
+
+# Convert to spatstat format for density estimation
+window <- as.owin(st_bbox(admin_boundaries_bmr_simplified))
+straight_road_ppp <- as.ppp(st_coordinates(straight_road_accidents_sf), W = window)
+
+# Perform Kernel Density Estimation with adjusted parameters
+straight_road_density <- density(straight_road_ppp, sigma = 100, eps = 50, edge = TRUE)
+
+# Convert the density output to a raster object
+straight_road_density_raster <- raster(straight_road_density)
+
+# Ensure raster and sf objects have the same CRS
+crs(straight_road_density_raster) <- st_crs(admin_boundaries_bmr_simplified)$proj4string
+
+# Plot Straight road accident density
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(col = "black", lwd = 1.5, alpha = 0.5) +  # Add boundaries with semi-transparency
+  tm_shape(straight_road_density_raster) +
+  tm_raster(palette = "-viridis", 
+            style = "fisher",
+            n = 9,
+            title = "Straight Road Accident Density",
+            alpha = 0.7) +
+  tm_shape(straight_road_accidents_sf) +
+  tm_dots(col = "red", size = 0.05, alpha = 0.5) +
+  tm_shape(admin_boundaries_bmr_simplified) +  # Add boundaries again on top
+  tm_borders(col = "black", lwd = 1.5, alpha = 0.5) +
+  tm_layout(title = "Accident Density on Straight Roads in BMR",
+            legend.outside = TRUE,
+            legend.title.size = 0.8,
+            legend.text.size = 0.6,
+            frame = FALSE) +
+  tm_scale_bar(position = c("left", "bottom"))
+```
+
+The map shows the **Kernel Density Estimation (KDE)** of road accidents on straight roads in the BMR. KDE is a technique used to estimate the density of events (accidents in this case) over a geographical area. The heatmap overlay on the map helps identify areas where accidents are most concentrated.
+
+**Interpretation:**
+
+-   **High accident density on straight roads**: The red dots represent accidents, and the colored density gradient (ranging from dark red to yellow) indicates accident density. The areas with darker red indicate higher concentrations of accidents.
+
+-   **Focus on hotspots**: These high-density areas could point to specific road conditions, traffic patterns, or driver behavior that make straight roads particularly risky in these locations.
+
+The observation that **straight roads have the most accidents** could be attributed to various factors such as high speed, inattentiveness, or driver fatigue, which are more common on long, straight sections of roads where drivers may feel more relaxed and less alert. These factors align with studies indicating that **straight roads often lead to more severe accidents**, especially at higher speeds. This analysis highlights the importance of focusing traffic safety measures, like speed controls and driver awareness programs, on these high-risk zones.
+
+#### Further analysis on driver behavior on straight road
+
+**Step 1: Descriptive Statistics of Accidents on Straight Roads**
+
+-   **Filter the accidents for straight roads**: Use the existing dataset to filter out the accidents that occurred specifically on straight roads.
+
+```{r}
+straight_road_accidents <- filter(accidents_bmr, road_description == "straight road")
+```
+
+-   **Summarize the causes of accidents**: Aggregate the data by the presumed cause of accidents on straight roads to identify the primary causes. This will give you a breakdown of accidents on straight roads by cause, fatalities, and injuries.
+
+```{r}
+# Aggregate accident counts by presumed cause
+straight_road_accident_causes_aggregated <- straight_road_accidents %>%
+  group_by(presumed_cause) %>%
+  summarise(total_accidents = n()) %>%
+  arrange(desc(total_accidents))
+
+# View the aggregated data in descending order
+print(straight_road_accident_causes_aggregated)
+```
+
+**Step 2: Spatial Visualization of Accident Causes**
+
+-   Create separate maps showing the distribution of accidents on straight roads by specific causes. For example, a map for accidents caused by speeding, driver fatigue, and reckless driving.
+
+```{r}
+#| eval: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +   
+  tm_shape(filter(accidents_bmr, road_description == "straight road" & presumed_cause == "speeding")) +
+  tm_dots(col = "red", size = 0.1, title = "Speeding Accidents") +
+  tm_layout(title = "Speeding Accidents on Straight Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| eval: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +   
+  tm_shape(filter(accidents_bmr, road_description == "straight road" & presumed_cause == "cutting in closely by people/vehicles/animals")) +
+  tm_dots(col = "red", size = 0.1, title = "Other Causes Accidents") +
+  tm_layout(title = "Other Causes Accidents on Straight Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| eval: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +   
+  tm_shape(filter(accidents_bmr, road_description == "straight road" & presumed_cause == "cutting in closely by people/vehicles/animals")) +
+  tm_dots(col = "red", size = 0.1, title = "People and Animal related Accidents") +
+  tm_layout(title = "People and Animal related Accidents on Straight Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| eval: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +   
+  tm_shape(filter(accidents_bmr, road_description == "straight road" & presumed_cause == "vehicle equipment failure")) +
+  tm_dots(col = "red", size = 0.1, title = "Vehicle Equipment Failure related Accidents") +
+  tm_layout(title = "Vehicle Equipment Failure related Accidents on Straight Roads", legend.outside = TRUE)
+```
+
+```{r}
+#| eval: false
+tm_shape(admin_boundaries_bmr_simplified) +
+  tm_borders(lwd = 1.5, col = "black") +
+  tm_shape(roads_bmr) +  # Add road network (no tm_raster, as it's a line)
+  tm_lines(col = "brown", lwd = 0.01, alpha = 0.1) +   
+  tm_shape(filter(accidents_bmr, road_description == "straight road" & presumed_cause == "vehicle equipment failure")) +
+  tm_dots(col = "red", size = 0.1, title = "Vehicle Equipment Failure related Accidents") +
+  tm_layout(title = "Vehicle Equipment Failure related Accidents on Straight Roads", legend.outside = TRUE)
+```
+
+Step 3: **Comparative Analysis by Region**:
+
+We also compare which regions within BMR are more prone to certain types of accidents on straight roads. Create a heatmap or bar chart showing the distribution by region.
+
+```{r}
+region_comparison <- accidents_bmr %>%
+  filter(road_description == "straight road") %>%
+  group_by(ADM1_EN, presumed_cause) %>%
+  summarise(total_accidents = n())
+
+ggplot(region_comparison, aes(x = ADM1_EN, y = total_accidents, fill = presumed_cause)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Accidents on Straight Roads by Region and Cause", x = "Region", y = "Total Accidents") +
+  theme_minimal()
 ```
