@@ -52,8 +52,6 @@ In this exercise, the following R packages will be used, they are:
 
     -   `k_function` to analyze spatial clustering of accidents on the road network.
 
-<!-- -->
-
 -   **sf**:
 
     -   `st_as_sf()` to convert datasets into spatial features (sf objects) for spatial analysis.
@@ -952,6 +950,7 @@ accidents_bmr_sf <- st_as_sf(accidents_bmr, coords = c("longitude", "latitude"),
 We can set up `tmap_animation()` to visualize the accident data across months or years while factoring in weather conditions.
 
 ```{r}
+#| eval: false
 # Switch to view mode for interactive animations 
 tmap_mode("view")
 
