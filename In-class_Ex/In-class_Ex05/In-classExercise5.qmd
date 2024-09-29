@@ -15,6 +15,137 @@ execute:
   freeze: true
 ---
 
-::: {style="font-size: 100px; text-align: center; color: #786F80;"}
-work in progress
-:::
+## Setting the Analytical Tools
+
+Before we get started, we need to ensure that **spdep**, **sf**, **tmap** and **tidyverse** packages of R are currently installed in your R.
+
+-   sf is use for importing and handling geospatial data in R,
+
+-   tidyverse is mainly use for wrangling attribute data in R,
+
+-   spdep will be used to compute spatial weights, global and local spatial autocorrelation statistics, and
+
+-   tmap will be used to prepare cartographic quality chropleth map.
+
+The code chunk below is used to perform the following tasks:
+
+-   creating a package list containing the necessary R packages,
+
+-   checking if the R packages in the package list have been installed in R,
+
+    -   if they have yet to be installed, RStudio will installed the missing packages,
+
+-   launching the packages into R environment.
+
+```{r}
+pacman::p_load(sf, sfdep, tmap, tidyverse)
+```
+
+## Getting the Data Into R Environment
+
+In this section, you will learn how to bring a geospatial data and its associated attribute table into R environment. The geospatial data is in ESRI shapefile format and the attribute table is in csv fomat.
+
+### Import shapefile into r environment
+
+The code chunk below uses [`st_read()`](https://r-spatial.github.io/sf/reference/st_read.html) of **sf** package to import Hunan shapefile into R. The imported shapefile will be **simple features** Object of **sf**.
+
+```{r}
+hunan <- st_read(dsn = "Data/geospatial", 
+                 layer = "Hunan")
+```
+
+### Import csv file into r environment
+
+Next, we will import *Hunan_2012.csv* into R by using [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package. The output is R data frame class.
+
+```{r}
+hunan2012 <- read_csv("Data/aspatial/Hunan_2012.csv")
+```
+
+### Performing relational join
+
+The code chunk below will be used to update the attribute table of *hunan*’s SpatialPolygonsDataFrame with the attribute fields of *hunan2012* dataframe. This is performed by using [`left_join()`](https://dplyr.tidyverse.org/reference/mutate-joins.html) of **dplyr** package.
+
+```{r}
+hunan_GDPPC <- left_join(hunan, hunan2012) %>%
+  select(1:4, 7, 15)
+```
+
+## Plotting a choropleth map
+
+```{r}
+tmap_mode("plot")
+tm_shape(hunan_GDPPC) +
+  tm_fill("GDPPC", 
+          style = "quantile", 
+          palette = "Blues",
+          title = "GDPPC") +
+  tm_layout(main.title = "Distribution of GDP per capita by county, Hunan Province",
+            main.title.position = "center",
+            main.title.size = 1.2,
+            legend.height = 0.45, 
+            legend.width = 0.35,
+            frame = TRUE) +
+  tm_borders(alpha = 0.5) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar() +
+  tm_grid(alpha =0.2)
+```
+
+## Global Measures of Spatial Association
+
+### Step 1: Deriving Queen’s contiguity weights: sfdep methods
+
+```{r}
+wm_q <- hunan_GDPPC %>%
+  mutate(nb = st_contiguity(geometry),
+         wt = st_weights(nb,
+                         style = "W"),
+         .before = 1) 
+```
+
+## Computing Global Moran'I
+
+In the code chunk below, global moran) function is used to compute the Moran's value. Different from spdep package, the output is a tibble data.frame.
+
+```{r}
+moranI <- global_moran(wm_q$GDPPC,
+                       wm_q$nb,
+                       wm_q$wt)
+glimpse(moranI)
+```
+
+## Performing Global Moran'sl test
+
+In general, Moran's I test will be performed instead of just computing the Moran's statistics. With sfdep package, Moran's I test can be performed by using global\_ shown in the code chunk below.
+
+```{r}
+global_moran_test(wm_q$GDPPC,
+                  wm_q$nb,
+                  wm_q$wt)
+```
+
+## Performing Global Moran'I permutation test
+
+In practice, Monte carlo simulation should be used to perform the statistical test. For sfdep, it is supported by *global moran perm()*.
+
+Next, *global_moran_perm()* is used to perform Monte Carlo simulation.
+
+```{r}
+global_moran_perm(wm_q$GDPPC,
+                  wm_q$nb,
+                  wm_q$wt,
+                  nsim = 99)
+```
+
+## Computing local Moran's I
+
+In this section, you will learn how to compute Local Moran's I of GDPC at county level by using *local moran ()* of sfdep package.
+
+```{r}
+lisa <- wm_q %>%
+  mutate(local_moran = local_moran(
+        GDPPC, nb, wt, nsim = 99),
+            .before = 1) %>%
+      unnest(local_moran)
+```
