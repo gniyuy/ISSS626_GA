@@ -15,6 +15,27 @@ execute:
   freeze: true
 ---
 
-::: {style="font-size: 100px; text-align: center; color: #786F80;"}
-work in progress
-:::
+## Getting started
+
+### Installing and Loading the R Packages
+
+```{r}
+pacman::p_load(sf, sfdep, tmap, tidyverse)
+```
+
+### Import shapefile into r environment
+
+The code chunk below uses [`st_read()`](https://r-spatial.github.io/sf/reference/st_read.html) of **sf** package to import Hunan shapefile into R. The imported shapefile will be **simple features** Object of **sf**.
+
+```{r}
+hunan <- st_read(dsn = "Data/geospatial", 
+                 layer = "Hunan")
+```
+
+### Import csv file into r environment
+
+Next, we will import *Hunan_2012.csv* into R by using [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package. The output is R data frame class.
+
+```{r}
+hunan2012 <- read_csv("Data/aspatial/Hunan_2012.csv")
+```

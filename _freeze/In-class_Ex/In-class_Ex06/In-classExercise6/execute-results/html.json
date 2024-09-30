@@ -1,0 +1,15 @@
+{
+  "hash": "85470534931572dfcdd169c2235c1db1",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\nformat: \n  html:\n    theme: lux\n    number-sections: true\n\ntitle: \"In-class Exercise 6\"\nauthor: \"Tai Yu Ying\"\ndate: \"Sep 30 2024\"\ndate-modified: \"last-modified\"\nexecute: \n  eval: true\n  echo: true\n  message: false\n  freeze: true\n---\n\n\n\n## Getting started\n\n### Installing and Loading the R Packages\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(sf, sfdep, tmap, tidyverse)\n```\n:::\n\n\n\n### Import shapefile into r environment\n\nThe code chunk below uses [`st_read()`](https://r-spatial.github.io/sf/reference/st_read.html) of **sf** package to import Hunan shapefile into R. The imported shapefile will be **simple features** Object of **sf**.\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nhunan <- st_read(dsn = \"Data/geospatial\", \n                 layer = \"Hunan\")\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\nReading layer `Hunan' from data source \n  `C:\\gniyuy\\ISSS626_GA\\In-class_Ex\\In-class_Ex06\\Data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n```\n\n\n:::\n:::\n\n\n\n### Import csv file into r environment\n\nNext, we will import *Hunan_2012.csv* into R by using [`read_csv()`](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package. The output is R data frame class.\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nhunan2012 <- read_csv(\"Data/aspatial/Hunan_2012.csv\")\n```\n\n::: {.cell-output .cell-output-stderr}\n\n```\nRows: 88 Columns: 29\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr  (2): County, City\ndbl (27): avg_wage, deposite, FAI, Gov_Rev, Gov_Exp, GDP, GDPPC, GIO, Loan, ...\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n```\n\n\n:::\n:::\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -670,7 +670,7 @@ qtm(shan_sf_cluster, "CLUSTER")
 
 The choropleth map above reveals the clusters are very fragmented. The is one of the major limitation when non-spatial clustering algorithm such as hierarchical cluster analysis method is used.
 
-##  **Spatially Constrained Clustering: SKATER approach**
+## **Spatially Constrained Clustering: SKATER approach**
 
 In this section, you will learn how to derive spatially constrained cluster by using [*skater()*](https://r-spatial.github.io/spdep/reference/skater.html) method of [**spdep**](https://r-spatial.github.io/spdep/index.html) package.
 
