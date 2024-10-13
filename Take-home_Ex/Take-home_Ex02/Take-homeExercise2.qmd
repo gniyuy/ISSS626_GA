@@ -1,0 +1,1469 @@
+---
+format: 
+  html:
+    theme: lux
+    number-sections: true
+
+title: "Take-home Exercise 2"
+author: "Tai Yu Ying"
+date: "Sep 25 2024"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  message: false
+  freeze: true
+  warning: false
+---
+
+## Overview
+
+Tourism is a critical part of Thailand’s economy, contributing around 20% of its GDP before the COVID-19 pandemic. In 2019, the country earned \$90 billion from tourism, but this dropped sharply to \$24 billion in 2020 due to the pandemic. Though recovery began in late 2021, revenues remain below pre-pandemic levels, with key tourist hubs like Bangkok and Phuket rebounding faster than smaller provinces.
+
+This study focuses on understanding the spatial and temporal recovery of Thailand's tourism economy from 2019 to 2023. Using spatial autocorrelation methods such as Global Moran’s I and Local Moran’s I, we aim to detect clusters of tourism activity across provinces. In addition, we will conduct an emerging hotspot analysis to track tourism trends over time, revealing which areas are leading recovery and which remain underperforming.
+
+Previous studies, such as Stankov et al. (2017), have successfully used spatial analysis to identify tourism clusters in Serbia, and Khan et al. (2017) applied similar methods in the U.S. to detect social trends. Applying these techniques in Thailand can provide insights into the geographic distribution of recovery, guiding targeted policy interventions.
+
+## Objective
+
+Given the importance of the tourism sector to Thailand's economic recovery, this study aims to address the following key research questions:
+
+-   Are Thailand’s tourism revenue patterns spatially and temporally dependent?
+-   Where are the emerging hotspots and cold spots in tourism recovery?
+
+## Installing and launching the R packages
+
+In this exercise, the following R packages will be used, they are:
+
+-   **`sf`**: For handling and manipulating **spatial data** (e.g., shapefiles of Thailand's provinces).
+-   **`sfdep`**: Provides tools for spatial dependence analysis on `sf` objects. This will be used for calculating spatial autocorrelation metrics like **Local Moran's I** and detecting clusters/outliers in tourism revenue data.
+-   **`spdep`**: For advanced spatial analysis, including **spatial weights** creation and conducting **spatial lag and error models** relevant to tourism data.
+-   **`tmap`**: Enables the creation of interactive and static **thematic maps**, crucial for visualizing clusters, hot/cold spots, and emerging tourism patterns.
+-   **`tidyverse`**: A suite of packages for data cleaning, manipulation, and visualization, used to manage and prepare the tourism data for analysis.
+-   **`knitr`**: Facilitates the generation of dynamic reports, integrating R code and output for documentation and reproducibility of the analysis.
+-   **`dplyr`**: Used for efficient data manipulation and cleaning, helping to preprocess the **tourism revenue dataset** before spatial analysis.
+-   **`spacetime`**: For managing and analyzing spatio-temporal data, allowing us to compare tourism revenue patterns over time (e.g., comparing 2020 and 2022 data).
+-   **`ggplot2`**: A visualization tool for creating detailed **spatial and statistical plots**, used to complement `tmap` for presenting tourism revenue patterns.
+
+```{r}
+pacman::p_load(sf, sfdep, spdep, tmap, tidyverse, knitr, dplyr, spacetime, ggplot2)
+```
+
+## Data Import and Preparation
+
+### The Data
+
+-   [Thailand Domestic Tourism Statistics](https://www.kaggle.com/datasets/thaweewatboy/thailand-domestic-tourism-statistics) at Kaggle.
+
+-   [Thailand - Subnational Administrative Boundaries](https://data.humdata.org/dataset/cod-ab-tha?) on HDX.
+
+### Import [Thailand Domestic Tourism Statistics](https://www.kaggle.com/datasets/thaweewatboy/thailand-domestic-tourism-statistics)
+
+This dataset provides monthly data on tourism activity across Thailand's provinces, from January 2019 to February 2023. The variable of interest is the ratio of tourist stays in each province, which reflects the percentage of tourists who stay overnight compared to the total number of visitors.
+
+Since data set is in csv file format, we will use [*read_csv()*](https://readr.tidyverse.org/reference/read_delim.html) of **readr** package to import `thailand_domestic_tourism_2019_2023_ver2.csv` as shown the code chunk below. The output R object is called `tour`.
+
+::: panel-tabset
+### The code
+
+```{r}
+tour <- read_csv("Data/rawdata/thailand_domestic_tourism_2019_2023_ver2.csv")
+```
+
+### Examine output
+
+After importing the data file into R, it is important for us to examine if the data file has been imported correctly.
+
+The code chunk below shows *summary()* and *list()* of Base R.
+
+The dataset includes the following columns:
+
+-   `date`: The time period (monthly data).
+
+-   `province_thai`: The name of the province in Thai.
+
+-   `province_eng`: The name of the province in English.
+
+-   `region_thai`: The region name in Thai.
+
+-   `region_eng`: The region name in English.
+
+-   `variable`: 8 types of data being recorded, such as the number of tourists or the occupancy rate.
+
+    -   `no_tourist_all` The total number of tourists who visited the province
+
+    -   `no_tourist_foreign` The number of foreign tourists who visited the province
+
+    -   `no_tourist_stay` The total number of occupied hotel rooms in the province
+
+    -   `no_tourist_thai` The number of Thai tourists who visited the province
+
+    -   `ratio_tourist_stay` The percentage of occupied travel accommodation in the province
+
+    -   `revenue_all` The revenue generated by the tourism industry in the province, in Thai Baht
+
+    -   `revenue_foreign` The revenue generated by foreign tourists in the province, in Thai Baht
+
+    -   `revenue_thai` The revenue generated by Thai tourists in the province, in Thai Baht
+
+-   `value`: The value of the measured variable.
+
+This dataset provides crucial insights into the tourism trends for each province, enabling the identification of recovery patterns after the pandemic. By analyzing the changes in the ratio of tourist stays, we can gauge how tourism activities have fluctuated in response to external factors, such as COVID-19.
+
+```{r}
+summary(tour)
+```
+
+```{r}
+list(tour)
+```
+:::
+
+### Import [Thailand - Subnational Administrative Boundaries](https://data.humdata.org/dataset/cod-ab-tha?)
+
+This dataset contains the geographic boundaries of Thailand’s provinces, represented as polygons. It is essential for spatial analysis and will be used to map and visualize the spatial distribution of tourism activities across Thailand.
+
+The code chunk below uses *st_read()* function of **sf** package to import `tha_adm_rtsd_itos_20210121_SHP` shapefile into R as a polygon feature data frame. 
+
+::: panel-tabset
+### The code
+
+```{r}
+admin_boundaries_raw <- st_read("Data/rawdata/tha_admbnda_adm2_rtsd_20220121.shp")
+```
+
+### Examine output
+
+The boundary dataset is currently using the **EPSG:4326 (WGS 84)** coordinate reference system, which employs latitude and longitude in degrees. While suitable for global mapping, EPSG:4326 is not ideal for precise local analysis due to its use of degrees rather than meters.
+
+To improve spatial accuracy and facilitate local analysis in Thailand, the coordinate system will be transformed to **EPSG:32647** (UTM Zone 47N), which uses meters for measurement. The reasons include:
+
+1.  **Improved Accuracy**: UTM projections, like EPSG:32647, provide more precise distance and area calculations compared to WGS 84, which uses degrees.
+
+2.  **Better for Local Analysis**: UTM zones minimize distortions for regional-scale mapping, making it more suitable for spatial analysis in Thailand.
+
+3.  **Consistency**: Many spatial studies in Thailand use UTM Zone 47N for local accuracy.
+
+```{r}
+print("Geospatial Properties:")
+print(st_crs(admin_boundaries_raw))
+print(st_geometry_type(admin_boundaries_raw))
+print(st_bbox(admin_boundaries_raw))
+```
+:::
+
+### Data Cleaning and Transformation for [Thailand Domestic Tourism Statistics](https://www.kaggle.com/datasets/thaweewatboy/thailand-domestic-tourism-statistics)
+
+::: panel-tabset
+### Selection of relevant columns
+
+The most relevant columns are:
+
+-   `date`: Required for temporal analysis (spacetime analysis).
+-   `province_eng`: The English name of the province, which will be used to join with the spatial boundary dataset.
+-   `value`: The numerical value of the ratio of tourist stays, which is the key variable for your spatial analysis.
+-   `variable`: The variable measured (in this case, it appears to be "ratio_tourist_stay," representing the ratio of tourist stays).
+
+The other columns, such as `province_thai`, `region_thai`, and `region_eng`, can be omitted if they are not needed for your analysis.
+
+```{r}
+# Select relevant columns: date, province_eng, and value
+tour_clean <- tour %>%
+                      select(date, province_eng, variable, value)
+
+# View the cleaned dataset
+head(tour_clean)
+```
+
+### Handling Missing Data
+
+Prepare a tourism economy indicators layer using **sf** and **tidyverse** functions. The layer should contain tourism economy indicators (like the ratio of tourist stays) for each province.
+
+```{r}
+# Handle missing values
+tour_clean$value <- zoo::na.approx(tour_clean$value)
+```
+
+### Date and Time Aggregation
+
+Keep the time series at **month and year levels** to prepare for spacetime analysis.
+
+Ensure that the **date** column is correctly formatted and aggregate the data by month and year for each province. This step is crucial for later **spacetime S3 class** analysis.
+
+```{r}
+# Convert 'date' column to date type and aggregate by month and year
+tour_clean$date <- as.Date(tour_clean$date)
+
+monthly_data <- tour_clean %>%
+                group_by(province_eng,variable, month = format(date, "%Y-%m")) %>%
+                summarize(total_value = mean(value, na.rm = TRUE))
+
+```
+
+### Rename `province_eng` to `ADM1_EN`
+
+```{r}
+# Rename the column
+monthly_data <- monthly_data %>%
+  dplyr:::rename.data.frame(ADM1_EN = province_eng)
+```
+
+### Rename provinces to match both dataset
+
+| Under `Thailand Domestic Tourism Statistics` | Under `Thailand - Subnational Administrative Boundaries` |
+|------------------------------------|------------------------------------|
+| Buriram | Buri Ram |
+| Chainat | Chai Nat |
+| Chonburi | Chon Buri |
+| Lopburi | Lop Buri |
+| Nong Bua Lamphu | Nong Bua Lam Phu |
+| Phang Nga | Phangnga |
+| Prachinburi | Prachin Buri |
+| Sisaket | Si Sa Ket |
+
+```{r}
+# Create a named vector for renaming provinces
+rename_provinces <- c(
+  "Buriram" = "Buri Ram",
+  "Chainat" = "Chai Nat",
+  "Chonburi" = "Chon Buri",
+  "Lopburi" = "Lop Buri",
+  "Nong Bua Lamphu" = "Nong Bua Lam Phu",
+  "Phang Nga" = "Phangnga",
+  "Prachinburi" = "Prachin Buri",
+  "Sisaket" = "Si Sa Ket"
+)
+
+# Rename provinces in the 'ADM1_EN' column using dplyr
+monthly_data <- monthly_data %>%
+  mutate(ADM1_EN = recode(ADM1_EN, !!!rename_provinces))
+```
+
+### Split of dataset into each variable
+
+```{r}
+# Filter the data for 'no_tourist_all'
+no_tourist_all_data <- monthly_data %>%
+                    filter(variable == "no_tourist_all")
+write_rds(no_tourist_all_data, "Data/rds/no_tourist_all_data.rds")
+no_tourist_all_data_join <- readRDS("Data/rds/no_tourist_all_data.rds")
+```
+
+```{r}
+# Filter the data for 'revenue_all'
+revenue_all_data <- monthly_data %>%
+                    filter(variable == "revenue_all")
+write_rds(revenue_all_data, "Data/rds/revenue_all_data.rds")
+revenue_all_data_join <- readRDS("Data/rds/revenue_all_data.rds")
+```
+:::
+
+### Exploratory Data Analysis (EDA) for [Thailand Domestic Tourism Statistics](https://www.kaggle.com/datasets/thaweewatboy/thailand-domestic-tourism-statistics)
+
+To derive a **tourism economy indicator layer** to be used for global and local spatial autocorrelation analysis.
+
+We can conduct preliminary visualizations (e.g., time series plots or heat maps) to understand tourism trends and identify any anomalies. This step helps ensure the data is ready for more complex spatial analysis.
+
+::: panel-tabset
+### Summary
+
+-   **Tourist Distribution**:
+
+    -   **Total Tourists (no_tourist_all)**: The average number of tourists is around 206,000, but some provinces see as many as 6.13 million, while others experience months with no tourists.
+
+    -   **Foreign Tourists (no_tourist_foreign)**: On average, provinces attract 32,000 foreign tourists, but the median is much lower at 553, showing that a few provinces (up to 2.47 million tourists) dominate international tourism.
+
+    -   **Domestic Tourists (no_tourist_thai)**: Domestic tourism is significant, with an average of 174,000 tourists per province, reaching a maximum of 4.08 million.
+
+-   **Overnight Stays**:
+
+    -   **Overnight Tourists (no_tourist_stay)**: The average number of tourists staying overnight is 105,000, but this varies widely across provinces.
+
+    -   **Ratio of Overnight Stays (ratio_tourist_stay)**: On average, 40% of tourists stay overnight, but this can range from 0% (day-trippers) to nearly 96%.
+
+-   **Tourism Revenue**:
+
+    -   **Total Revenue (revenue_all)**: Provinces earn an average of 1.34 billion Baht in tourism revenue, with the highest revenue reaching over 1 trillion Baht, indicating a large revenue disparity.
+
+    -   **Foreign Revenue (revenue_foreign)**: Foreign tourists contribute an average of 680 million Baht, with some provinces earning as much as 85 billion Baht.
+
+    -   **Domestic Revenue (revenue_thai)**: Domestic tourists generate an average of 663 million Baht, with a maximum of 45 billion Baht in some provinces.
+
+```{r}
+# Group by variable and calculate summary statistics for each category
+summary_stats <- monthly_data %>%
+                 group_by(variable) %>%
+                 summarize(mean_value = mean(total_value, na.rm = TRUE),
+                           median_value = median(total_value, na.rm = TRUE),
+                           min_value = min(total_value, na.rm = TRUE),
+                           max_value = max(total_value, na.rm = TRUE))
+
+print(summary_stats)
+```
+
+### Trends Over Time by Category
+
+```{r}
+ggplot(no_tourist_all_data, aes(x = month, y = total_value)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Monthly Total Number of All Tourists, 2019-2023",
+       x = "Month-Year", y = "No. of Tourists") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+ggplot(revenue_all_data, aes(x = month, y = total_value)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title = "Monthly Total Revenue from Tourism Industry, 2019-2023",
+       x = "Month-Year", y = "Total Revenue") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Total Revenue by Province in 2019
+
+Figure below reveals that the tourism economy of Thailand are mainly focus on five provinces, namely Bangkok, Phuket, Chonburi, Krabi and Chiang Mai.
+
+```{r}
+# Filter the data for all months in 2019 and "revenue_all" in the 'variable' column
+revenue_2019 <- monthly_data %>%
+  filter(variable == "revenue_all", grepl("^2019-", month)) %>%
+  group_by(ADM1_EN) %>%
+  summarize(total_revenue = sum(total_value, na.rm = TRUE))
+
+# Create a bar plot using ggplot2
+ggplot(revenue_2019, aes(x = reorder(ADM1_EN, total_revenue), y = total_revenue)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  coord_flip() + # Flip coordinates to make a horizontal bar plot
+  labs(title = "Total Revenue by Province in 2019",
+       x = "Province",
+       y = "Total Revenue") +
+  theme_minimal() # Use a minimal theme for a clean look
+```
+:::
+
+### Data Cleaning and Transformation for [Thailand - Subnational Administrative Boundaries](https://data.humdata.org/dataset/cod-ab-tha?)
+
+::: panel-tabset
+### Prepare study area layer in sf polygon
+
+This will enable the linking of tourism data with geographic boundaries.
+
+Ensure that all provinces are included in the boundary dataset and that their polygon geometries are valid. Check for and fix any invalid geometries.
+
+```{r}
+# Check and fix invalid geometries
+sum(!st_is_valid(admin_boundaries_raw))  # Check for invalid geometries
+boundaries <- st_make_valid(admin_boundaries_raw)  # Fix invalid geometries
+```
+
+### Selecting relevant columns
+
+The following columns that provide information on the administrative area can be retained, such as:
+
+-   `ADM1_EN` (English name of the first-level boundary, e.g., province)
+
+-   `geometry` (spatial information in MULTIPOLYGON format)
+
+```{r}
+admin_boundaries_filtered <- admin_boundaries_raw %>%
+  dplyr::select(ADM1_EN, geometry)
+```
+
+### Remove Z and M dimensions from the admin boundaries dataset
+
+```{r}
+admin_boundaries_drop <- st_zm(admin_boundaries_filtered, drop = TRUE, what = "ZM")
+```
+
+### CRS Transformation
+
+Transform the CRS from **EPSG:4326 (WGS 84)** to **EPSG:32647 (UTM Zone 47N)** to align with local spatial analysis requirements.
+
+```{r}
+admin_boundaries_cleaned <- admin_boundaries_drop %>%
+  st_transform(crs = 32647) 
+
+# Display the filtered data
+summary(admin_boundaries_cleaned)
+```
+
+### Aggregate district-level geometries to province-level boundaries
+
+Group the data by `ADM1_EN` (the province name) and ensure that you only keep one geometry per province.
+
+```{r}
+simplified_provinces <- admin_boundaries_cleaned %>%
+  group_by(ADM1_EN) %>%
+  summarize(geometry = st_union(geometry)) %>%
+  st_cast("MULTIPOLYGON")
+```
+:::
+
+### Merging the Two Datasets
+
+Merge the tourism dataset with the provincial boundary dataset to create the **study area layer** and **tourism economy indicators layer** for spatial analysis.
+
+```{r}
+no_tourist_all_join <- dplyr:::left_join.data.frame(simplified_provinces, no_tourist_all_data, by = c(ADM1_EN = "ADM1_EN"))
+write_rds(no_tourist_all_join, "Data/rds/no_tourist_all.rds")
+no_tourist_all_join <- readRDS("Data/rds/no_tourist_all.rds")
+```
+
+```{r}
+revenue_all_join <- dplyr:::left_join.data.frame(simplified_provinces, revenue_all_data, by = c(ADM1_EN = "ADM1_EN"))
+write_rds(revenue_all_join, "Data/rds/rev_all.rds")
+revenue_all_join <- readRDS("Data/rds/rev_all.rds")
+```
+
+### Filter the Data for Each Year
+
+To investigate the impact of COVID-19 on Thailand's tourism industry while choosing specific years, would recommend focusing on the following years:
+
+-   **2020 (Pandemic Year)**: This year represents the height of the COVID-19 pandemic, with lockdowns, travel restrictions, and a significant decline in both international and domestic tourism. Analyzing this year will highlight how severely the pandemic disrupted tourism in Thailand.
+
+-   **2022 (Recovery Year)**: By 2022, many countries, including Thailand, began easing restrictions, allowing travel to resume. Analyzing this year helps to assess the recovery phase and whether the tourism industry has bounced back to pre-pandemic levels, or if it is still lagging.
+
+By focusing on these two years, we can clearly assess the immediate impact of the pandemic and the subsequent recovery, providing a targeted understanding of how tourism dynamics shifted between the crisis and recovery periods.
+
+```{r}
+# Convert the 'month' column to a date format
+revenue_all_join <- revenue_all_join %>%
+  mutate(month = as.Date(paste0(month, "-01"), format = "%Y-%m-%d"))
+
+no_tourist_all_join <- no_tourist_all_join %>%
+  mutate(month = as.Date(paste0(month, "-01"), format = "%Y-%m-%d"))
+```
+
+#### Total revenue generated by tourism industry
+
+::: panel-tabset
+#### Pandemic Year: 2020
+
+```{r}
+rev_2020 <- revenue_all_join %>% filter(format(as.Date(month), "%Y") == "2020")
+
+# Summarize total revenue by province for 2020
+rev_2020 <- rev_2020 %>%
+  group_by(ADM1_EN) %>%
+  summarize(total_revenue = sum(total_value, na.rm = TRUE))
+```
+
+#### Recovery Year: 2022
+
+```{r}
+rev_2022 <- revenue_all_join %>% filter(format(as.Date(month), "%Y") == "2022")
+
+# Summarize total revenue by province for 2020
+rev_2022 <- rev_2022 %>%
+  group_by(ADM1_EN) %>%
+  summarize(total_revenue = sum(total_value, na.rm = TRUE))
+```
+:::
+
+#### Number of tourists visited the provinces
+
+::: panel-tabset
+#### Pandemic Year: 2020
+
+```{r}
+notour_2020 <- no_tourist_all_join %>% filter(format(as.Date(month), "%Y") == "2020")
+
+# Summarize total revenue by province for 2020
+notour_2020 <- notour_2020 %>%
+  group_by(ADM1_EN) %>%
+  summarize(no_tourist = sum(total_value, na.rm = TRUE))
+```
+
+#### Recovery Year: 2022
+
+```{r}
+notour_2022 <- no_tourist_all_join %>% filter(format(as.Date(month), "%Y") == "2022")
+
+# Summarize total revenue by province for 2020
+notour_2022 <- notour_2022 %>%
+  group_by(ADM1_EN) %>%
+  summarize(no_tourist = sum(total_value, na.rm = TRUE))
+```
+:::
+
+### Saving the Analytical Data Table
+
+```{r}
+write_rds(rev_2020, "Data/rds/rev_2020.rds")
+write_rds(rev_2022, "Data/rds/rev_2022.rds")
+write_rds(notour_2020, "Data/rds/notour_2020 .rds")
+write_rds(notour_2022, "Data/rds/notour_2022 .rds")
+```
+
+## Visualising Thailand tourism economy
+
+Let’s load the .rds file using the *readRDS()* function.
+
+```{r}
+rev_2020 <- readRDS("Data/rds/rev_2020.rds")
+rev_2022 <- readRDS("Data/rds/rev_2022.rds")
+notour_2020 <- readRDS("Data/rds/notour_2020 .rds")
+notour_2022 <- readRDS("Data/rds/notour_2022 .rds")
+```
+
+Now, we are going to prepare a basemap and a choropleth map showing the distribution of Thailand tourism economy by using *qtm()* of **tmap** package.
+
+```{r}
+tmap_mode("plot")
+```
+
+```{r}
+basemap <- tm_shape(rev_2020) +
+  tm_polygons() +
+  tm_text("ADM1_EN", size=0.5)
+
+rev_2020_map <- qtm(rev_2020, "total_revenue")
+tmap_arrange(basemap, rev_2020_map, asp=1, ncol=2)
+```
+
+```{r}
+basemap <- tm_shape(rev_2022) +
+  tm_polygons() +
+  tm_text("ADM1_EN", size=0.5)
+
+rev_2022_map <- qtm(rev_2022, "total_revenue")
+tmap_arrange(basemap, rev_2022_map, asp=1, ncol=2)
+```
+
+```{r}
+basemap <- tm_shape(notour_2020) +
+  tm_polygons() +
+  tm_text("ADM1_EN", size=0.5)
+
+notour_2020_map <- qtm(notour_2020, "no_tourist")
+tmap_arrange(basemap, notour_2020_map, asp=1, ncol=2)
+```
+
+```{r}
+basemap <- tm_shape(notour_2022) +
+  tm_polygons() +
+  tm_text("ADM1_EN", size=0.5)
+
+notour_2022_map <- qtm(notour_2022, "no_tourist")
+tmap_arrange(basemap, notour_2022_map, asp=1, ncol=2)
+```
+
+## Global Spatial Autocorrelation Analysis
+
+Global Spatial Autocorrelation Analysis helps determine whether the spatial distribution of tourism revenue is random or exhibits patterns across different regions. This step involves applying the `sfdep` package in R to compute the Global Moran’s I statistic, which measures the degree of spatial autocorrelation in the dataset. The analysis includes significance testing to confirm whether any detected patterns are statistically significant.
+
+Global Moran’s I is a statistical measure that assesses whether the observed values (e.g., tourism revenue) are clustered, dispersed, or randomly distributed in space. A positive Moran’s I value suggests clustering, a negative value indicates dispersion, and a value near zero implies randomness.
+
+### Total revenue generated by tourism industry
+
+`revenue_all` represents the total revenue generated by the tourism industry in each province, which makes it a suitable choice for analyzing spatial patterns in economic impact.
+
+Since the analysis aims to understand the spatial distribution of the tourism economy, using revenue data provides direct insights into the financial performance of each province.
+
+#### Pandemic Year: 2020
+
+::: panel-tabset
+### Computing (QUEEN) contiguity based neighbours
+
+The code chunk below is used to compute Queen contiguity weight matrix.
+
+```{r}
+wm_q_rev_2020 <- poly2nb(rev_2020, queen=TRUE)
+summary(wm_q_rev_2020)
+```
+
+The summary report above shows that there are 77 area units in Thailand. The most connected area unit has 9 neighbours. There are one area units with only one neighbours.
+
+### Creating (ROOK) contiguity based neighbours
+
+The code chunk below is used to compute Rook contiguity weight matrix.
+
+```{r}
+wm_r_rev_2020 <- poly2nb(rev_2020, queen=FALSE)
+summary(wm_r_rev_2020)
+```
+
+The summary report above shows that there are 77 area units in Thailand. The most connected area unit has 9 neighbours. There are one area units with only one neighbours.
+
+### Summary
+
+A summary of the results are below. In our case, both methods yield similar results.
+
+|                              | Queen Contiguity | Rook Contiguity |
+|------------------------------|------------------|-----------------|
+| No. of regions with no links | 5                | 5               |
+| Average number of links      | 4.571            | 4.571           |
+:::
+
+##### Create spatial weights matrix
+
+Create a spatial weights matrix using the tourism data. The spatial weights define how each region is connected to other regions, based on criteria such as contiguity (neighboring areas) or distance.
+
+```{r}
+rswm_q_rev_2020 <- nb2listw(wm_q_rev_2020, 
+                   style="W", 
+                   zero.policy = TRUE)
+rswm_q_rev_2020
+```
+
+##### Calculate Global Moran’s I
+
+::: panel-tabset
+### Global Moran’s I
+
+The code chunk below performs Moran’s I statistical testing using moran.test() of spdep.
+
+```{r}
+moran.test(rev_2020$total_revenue, 
+           listw=rswm_q_rev_2020, 
+           zero.policy = TRUE, 
+           na.action=na.omit)
+```
+
+### Interpretation
+
+-   **Value**: `-0.036786950`
+
+    -   This value is close to zero, which suggests there is **no significant spatial autocorrelation** in the tourism revenue data across provinces. In simpler terms, the tourism revenue in one province does not seem to be strongly correlated with the tourism revenue in neighboring provinces.
+
+    -   A Moran's I value close to zero implies that the distribution of tourism revenue across the provinces is random rather than clustered or dispersed.
+
+-   **p-value**:
+
+    -   **Value**: `0.6846`
+
+        -   The p-value is much higher than the standard significance level (typically 0.05 or 0.01), which means there is **no statistically significant spatial autocorrelation**. This indicates that you cannot reject the null hypothesis of no spatial correlation.
+
+        -   In other words, there is no statistically significant pattern of similarity or dissimilarity in tourism revenue among neighboring provinces.
+
+Interpretation of the Results in Context:
+
+-   **Conclusion**: The results suggest that tourism revenue in each province is not spatially dependent. Neighboring provinces do not tend to have similar tourism revenue patterns, and the distribution of tourism revenue is likely random across provinces.
+
+-   **Implications**: This finding implies that the factors influencing tourism revenue may be more locally specific or influenced by other non-spatial factors (such as marketing efforts, tourism infrastructure, or attractions within each province), rather than proximity to neighboring provinces.
+:::
+
+##### Computing Monte Carlo Moran’s I
+
+::: panel-tabset
+### Monte Carlo Moran’s I
+
+The code chunk below performs permutation test for Moran’s I statistic by using [`moran.mc()`](https://r-spatial.github.io/spdep/reference/moran.mc.html) of **spdep**. A total of 1000 simulation will be performed.
+
+```{r}
+set.seed(1234)
+bperm_rev_2020= moran.mc(rev_2020$total_revenue, 
+                listw=rswm_q_rev_2020, 
+                nsim=999, 
+                zero.policy = TRUE, 
+                na.action=na.omit)
+bperm_rev_2020
+```
+
+### Interpretation
+
+-   **Value**: `-0.036787`
+
+    -   This value is very close to zero, indicating **no significant spatial autocorrelation** in the tourism revenue data across provinces. It suggests that tourism revenue in one province is not related to the tourism revenue in neighboring provinces.
+
+-   **p-value**:
+
+    -   **Value**: `0.655`
+
+        -   The p-value from the simulation is quite large, much greater than the standard threshold of 0.05, meaning that there is **no statistically significant spatial autocorrelation** in tourism revenue. You cannot reject the null hypothesis of no spatial autocorrelation.
+
+        -   The high p-value reinforces that the distribution of tourism revenue across provinces is likely random and not spatially dependent.
+
+-   **Observed rank**:
+
+    -   **Observed rank = 345** means that out of the 1000 simulations, the test statistic from your actual data ranked 345th in terms of magnitude. This suggests that your observed Moran's I value is not unusual compared to the distribution of randomly generated statistics, further indicating no significant spatial pattern.
+
+### Interpretation of the Results:
+
+-   **Conclusion**: Similar to the earlier Moran’s I test, this Monte Carlo simulation confirms that there is **no significant spatial autocorrelation** in tourism revenue across the provinces. The tourism revenue in one province does not influence or show a correlation with that of neighboring provinces.
+
+-   **Implications**: Tourism revenue is likely influenced by factors that are not spatially distributed (such as specific attractions, infrastructure, or marketing efforts in each province). The lack of spatial dependency implies that proximity to high-earning provinces doesn't necessarily mean a neighboring province will also have high tourism revenue.
+:::
+
+##### Visualize the Results
+
+Since the observed Moran's I (red line) lies within the range of the simulated values and near the center of the distribution, this indicates that **the spatial distribution of tourism revenue across provinces is random**. In other words, there is no significant spatial pattern where provinces with high or low tourism revenue cluster together.
+
+```{r}
+hist(bperm_rev_2020$res, 
+     freq=TRUE, 
+     breaks=20, 
+     xlab="Simulated Moran's I")
+abline(v=0, 
+       col="red") 
+```
+
+#### Recovering Year: 2022
+
+::: panel-tabset
+### Computing (QUEEN) contiguity based neighbours
+
+The code chunk below is used to compute Queen contiguity weight matrix.
+
+```{r}
+wm_q_rev_2022 <- poly2nb(rev_2022, queen=TRUE)
+summary(wm_q_rev_2022)
+```
+
+The summary report above shows that there are 77 area units in Thailand. The most connected area unit has 9 neighbours. There are one area units with only one neighbours.
+
+### Creating (ROOK) contiguity based neighbours
+
+The code chunk below is used to compute Rook contiguity weight matrix.
+
+```{r}
+wm_q_rev_2022 <- poly2nb(rev_2022, queen=FALSE)
+summary(wm_q_rev_2022)
+```
+
+The summary report above shows that there are 77 area units in Thailand. The most connected area unit has 9 neighbours. There are one area units with only one neighbours.
+
+### Summary
+
+A summary of the results are below. In our case, both methods yield similar results.
+
+|                              | Queen Contiguity | Rook Contiguity |
+|------------------------------|------------------|-----------------|
+| No. of regions with no links | 5                | 5               |
+| Average number of links      | 4.571            | 4.571           |
+:::
+
+##### Create spatial weights matrix
+
+Create a spatial weights matrix using the tourism data. The spatial weights define how each region is connected to other regions, based on criteria such as contiguity (neighboring areas) or distance.
+
+```{r}
+rswm_q_rev_2022 <- nb2listw(wm_q_rev_2022, 
+                   style="W", 
+                   zero.policy = TRUE)
+rswm_q_rev_2022
+```
+
+##### Calculate Global Moran’s I
+
+::: panel-tabset
+### Global Moran’s I
+
+The code chunk below performs Moran’s I statistical testing using moran.test() of spdep.
+
+```{r}
+moran.test(rev_2022$total_revenue, 
+           listw=rswm_q_rev_2022, 
+           zero.policy = TRUE, 
+           na.action=na.omit)
+```
+
+### Interpretation
+
+-   **Value**: `-0.29739`
+
+    -   This value is close to zero, which suggests there is **no significant spatial autocorrelation** in the tourism revenue data across provinces. In simpler terms, the tourism revenue in one province does not seem to be strongly correlated with the tourism revenue in neighboring provinces.
+
+    -   A Moran's I value close to zero implies that the distribution of tourism revenue across the provinces is random rather than clustered or dispersed.
+
+-   **p-value**:
+
+    -   **Value**: `0.6169`
+
+        -   The p-value is much higher than the standard significance level (typically 0.05 or 0.01), which means there is **no statistically significant spatial autocorrelation**. This indicates that you cannot reject the null hypothesis of no spatial correlation.
+
+        -   In other words, there is no statistically significant pattern of similarity or dissimilarity in tourism revenue among neighboring provinces.
+
+Interpretation of the Results in Context:
+
+-   **Conclusion**: The results suggest that tourism revenue in each province is not spatially dependent. Neighboring provinces do not tend to have similar tourism revenue patterns, and the distribution of tourism revenue is likely random across provinces.
+
+-   **Implications**: This finding implies that the factors influencing tourism revenue may be more locally specific or influenced by other non-spatial factors (such as marketing efforts, tourism infrastructure, or attractions within each province), rather than proximity to neighboring provinces.
+:::
+
+##### Computing Monte Carlo Moran’s I
+
+::: panel-tabset
+### Monte Carlo Moran’s I
+
+The code chunk below performs permutation test for Moran’s I statistic by using [`moran.mc()`](https://r-spatial.github.io/spdep/reference/moran.mc.html) of **spdep**. A total of 1000 simulation will be performed.
+
+```{r}
+set.seed(1234)
+bperm_rev_2022= moran.mc(rev_2022$total_revenue, 
+                listw=rswm_q_rev_2022, 
+                nsim=999, 
+                zero.policy = TRUE, 
+                na.action=na.omit)
+bperm_rev_2022
+```
+
+### Interpretation
+
+-   **Value**: `-0.029461`
+
+    -   This value is very close to zero, indicating **no significant spatial autocorrelation** in the tourism revenue data across provinces. It suggests that tourism revenue in one province is not related to the tourism revenue in neighboring provinces.
+
+-   **p-value**:
+
+    -   **Value**: `0.506`
+
+        -   The p-value from the simulation is quite large, much greater than the standard threshold of 0.05, meaning that there is **no statistically significant spatial autocorrelation** in tourism revenue. You cannot reject the null hypothesis of no spatial autocorrelation.
+
+        -   The high p-value reinforces that the distribution of tourism revenue across provinces is likely random and not spatially dependent.
+
+-   **Observed rank**:
+
+    -   **Observed rank = 345** means that out of the 1000 simulations, the test statistic from your actual data ranked 345th in terms of magnitude. This suggests that your observed Moran's I value is not unusual compared to the distribution of randomly generated statistics, further indicating no significant spatial pattern.
+
+### Interpretation of the Results:
+
+-   **Conclusion**: Similar to the earlier Moran’s I test, this Monte Carlo simulation confirms that there is **no significant spatial autocorrelation** in tourism revenue across the provinces. The tourism revenue in one province does not influence or show a correlation with that of neighboring provinces.
+
+-   **Implications**: Tourism revenue is likely influenced by factors that are not spatially distributed (such as specific attractions, infrastructure, or marketing efforts in each province). The lack of spatial dependency implies that proximity to high-earning provinces doesn't necessarily mean a neighboring province will also have high tourism revenue.
+:::
+
+##### Visualize the Results
+
+Since the observed Moran's I (red line) lies within the range of the simulated values and near the center of the distribution, this indicates that **the spatial distribution of tourism revenue across provinces is random**. In other words, there is no significant spatial pattern where provinces with high or low tourism revenue cluster together.
+
+```{r}
+hist(bperm_rev_2022$res, 
+     freq=TRUE, 
+     breaks=20, 
+     xlab="Simulated Moran's I")
+abline(v=0, 
+       col="red") 
+```
+
+## Local Spatial Autocorrelation Analysis
+
+To perform **Local Spatial Autocorrelation Analysis**, we will focus on two variables from your dataset: `no_tourist_all` and `revenue_all`. These represent the total number of tourists and total revenue, respectively. For each, we'll apply **Local Moran's I** to identify hotspots, cold spots, and spatial outliers.
+
+### Total revenue generated by tourism industry
+
+#### Pandemic Year: 2020
+
+##### Local Moran's I Calculation
+
+::: panel-tabset
+### Local Moran's I
+
+To compute local Moran’s I, the [*localmoran()*](https://r-spatial.github.io/spdep/reference/localmoran.html) function of **spdep** will be used. It computes *Ii* values, given a set of *zi* values and a listw object providing neighbour weighting information for the polygon associated with the zi values.
+
+The code chunks below are used to compute local Moran’s I of *revenue_all* at the province level.
+
+```{r}
+fips <- order(rev_2020$total_revenue)
+localMI.2020 <- localmoran(rev_2020$total_revenue, rswm_q_rev_2020)
+head(localMI.2020)
+```
+
+### Interpretation
+
+-   Most provinces show weak clustering or dispersion of tourism revenue, but these are not statistically significant (high p-values).
+
+-   The province in **Row 6** shows significant **dispersion** (i.e., it has a very different tourism revenue compared to its neighboring provinces). This result is statistically significant, indicating that this province is a potential outlier in the spatial distribution of tourism revenue.
+:::
+
+The code chunk below list the content of the local Moran matrix derived by using [*printCoefmat()*](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/printCoefmat).
+
+```{r}
+printCoefmat(data.frame(
+  localMI.2020[fips,], 
+  row.names=rev_2020$ADM1_EN[fips]),
+  check.names=FALSE)
+```
+
+**Significant Provinces with Negative Z-scores** (potential outliers):
+
+-   **Samut Sakhon**:
+
+    -   Z.Ii = `-3.4779`
+
+    -   p-value = `0.0005`
+
+    -   Interpretation: Samut Sakhon has significantly different tourism revenue from its neighboring provinces, making it a potential **outlier** in terms of low tourism revenue compared to its neighbors.
+
+-   **Samut Prakan**:
+
+    -   Z.Ii = `-5.2336`
+
+    -   p-value = `0.0000`
+
+    -   Interpretation: Samut Prakan is another **outlier** with significantly different tourism revenue compared to neighboring provinces.
+
+-   **Nakhon Pathom**:
+
+    -   Z.Ii = `-3.8708`
+
+    -   p-value = `0.0001`
+
+    -   Interpretation: Nakhon Pathom also appears to be a significant **outlier** with very different tourism revenue from its neighbors.
+
+-   **Chumphon**:
+
+    -   Z.Ii = `-3.9273`
+
+    -   p-value = `0.0001`
+
+    -   Interpretation: Chumphon shows a significant dispersion, suggesting that its tourism revenue is an outlier compared to nearby provinces.
+
+##### Mapping both local Moran’s I values and p-values
+
+```{r}
+rev_2020.localMI <- cbind(rev_2020,localMI.2020) %>%
+  rename(Pr.Ii = Pr.z....E.Ii..)
+```
+
+For effective interpretation, it is better to plot both the local Moran’s I values map and its corresponding p-values map next to each other.
+
+The code chunk below will be used to create such visualisation.
+
+```{r}
+localMI.2020.map <- tm_shape(rev_2020.localMI) +
+  tm_fill(col = "Ii", 
+          style = "pretty", 
+          title = "local moran statistics") +
+  tm_borders(alpha = 0.5)
+
+pvalue.2020.map <- tm_shape(rev_2020.localMI) +
+  tm_fill(col = "Pr.Ii", 
+          breaks=c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+          palette="-Blues", 
+          title = "local Moran's I p-values") +
+  tm_borders(alpha = 0.5)
+
+tmap_arrange(localMI.2020.map, pvalue.2020.map, asp=1, ncol=2)
+```
+
+##### Cluster Identification (HH, LL, HL, LH)
+
+We can classify the results into clusters: High-High (HH), Low-Low (LL), High-Low (HL), and Low-High (LH) based on z-scores.
+
+-   **Hotspots (HH)**: Provinces that have high values and are surrounded by neighbors with high values. These are tourism revenue hotspots.
+
+-   **Cold spots (LL)**: Provinces with low values surrounded by neighbors with low values.
+
+-   **High-Low (HL)** and **Low-High (LH)** indicate outliers where a province's value is higher or lower than its neighbors.
+
+```{r}
+rev_2020$cluster <- ifelse(localMI.2020[,5] < 0.05,  # p-value significance
+                                   ifelse(localMI.2020[,4] > 0, "HH", "LL"), "Not Significant")
+```
+
+##### Visualize the Results Using ggplot2
+
+To map the identified clusters, we can use ggplot2.
+
+```{r}
+ggplot(rev_2020) +
+  geom_sf(aes(fill = cluster)) +
+  scale_fill_manual(values = c("HH" = "red", "LL" = "blue", "Not Significant" = "grey")) +
+  theme_minimal() +
+  labs(title = "Local Moran's I - Revenue Clusters",
+       fill = "Cluster")
+```
+
+Interpretation of the Map:
+
+1.  **Blue Areas (LL Clusters)**:
+
+    -   The provinces shaded in **blue** are showing **low-low clusters**. This means that these provinces have **low tourism revenue**, and they are surrounded by other provinces with similarly low tourism revenue.
+
+    -   These areas could potentially represent regions where tourism activities are generally lower, and this pattern holds across neighboring provinces. In this context, **southern provinces of central Thailand** appear to have clusters of low tourism revenue.
+
+2.  **Gray Areas (Not Significant)**:
+
+    -   The **gray provinces** show no statistically significant spatial autocorrelation in tourism revenue. In these areas, tourism revenue may not follow any specific clustering pattern, either high-high or low-low. These provinces have tourism revenue that does not have a strong relationship with their neighboring provinces in terms of similarities or dissimilarities.
+
+3.  **Unshaded or NA Areas**:
+
+    -   These regions either have missing data or were excluded from the analysis for some reason (such as having no valid neighboring regions to analyze).
+
+Implications of the Results:
+
+-   The **Low-Low (LL)** clusters may indicate areas where tourism infrastructure or marketing efforts are weaker, or where attractions are less developed compared to other regions. These regions might benefit from targeted interventions to improve tourism and boost revenue.
+
+-   The **Not Significant** regions may be areas where local factors (such as local attractions, accessibility, or provincial policies) are more important drivers of tourism revenue, without strong influence from neighboring provinces.
+
+##### Local Geary's C
+
+For more precise local autocorrelation, we can also compute **Local Geary's C**. This measures dissimilarities between neighbors.
+
+```{r}
+# Calculate Local Geary's C for 'revenue_all' using the correct function localC()
+local_geary_rev_2020 <- localC(rev_2020$total_revenue, rswm_q_rev_2020, zero.policy = TRUE)
+
+# Add Local Geary's C to the dataset for 'revenue_all'
+rev_2020$local_geary <- local_geary_rev_2020
+
+# Plot the results using ggplot
+ggplot(rev_2020) +
+  geom_sf(aes(fill = local_geary)) +
+  theme_minimal() +
+  labs(title = "Local Geary's C - Revenue clusters", fill = "Geary's C")
+```
+
+Interpretation of the Map:
+
+1.  **Provinces with Higher Geary’s C (Darker Blue)**:
+
+    -   Provinces that are shaded in **darker blue** have higher Geary’s C values, indicating that their tourism revenues are quite different from neighboring provinces. These provinces may be outliers with respect to their neighbors.
+
+    -   In your map, there are darker blue provinces, indicating that these areas have substantial differences in tourism revenue compared to their neighbors.
+
+2.  **Provinces with Lower Geary’s C (Lighter Blue)**:
+
+    -   The **lighter blue** regions have lower Geary’s C values, meaning that the tourism revenue in these provinces is more similar to that of their neighboring provinces. These regions might form clusters where provinces exhibit similar tourism revenue patterns.
+
+Implications of the Results:
+
+-   **High Geary’s C values** (darker blue areas) indicate provinces where the tourism revenue is **significantly different** from neighboring provinces. These areas might warrant further investigation to understand the reasons behind this discrepancy (e.g., unique attractions, significant tourism policies, or infrastructure differences).
+
+-   **Low Geary’s C values** (lighter blue areas) indicate provinces where the tourism revenue is **similar to neighboring provinces**, forming clusters of similarity.
+
+##### **Creating a LISA Cluster Map**
+
+The Moran scatterplot is an illustration of the relationship between the values of the chosen attribute at each location and the average value of the same attribute at neighboring locations.
+
+The code chunk below plots the Moran scatterplot of rev_2020 by using [*moran.plot()*](https://r-spatial.github.io/spdep/reference/moran.plot.html) of **spdep**.
+
+```{r}
+rev_2020$Z.total_revenue <- scale(rev_2020$total_revenue) %>% 
+  as.vector 
+
+nci2 <- moran.plot(rev_2020$Z.total_revenue, rswm_q_rev_2020,
+                   labels=as.character(rev_2020$ADM1_EN),
+                   xlab="z-rev_2020", 
+                   ylab="Spatially Lag z-rev_2020")
+```
+
+##### **Plotting LISA map**
+
+```{r}
+quadrant <- vector(mode="numeric",length=nrow(localMI.2020))
+rev_2020$lag_total_revenue <- lag.listw(rswm_q_rev_2020, rev_2020$total_revenue)
+DV <- rev_2020$lag_total_revenue - mean(rev_2020$lag_total_revenue)     
+LM_I <- localMI.2020[,1]   
+signif <- 0.05       
+quadrant[DV <0 & LM_I>0] <- 1
+quadrant[DV >0 & LM_I<0] <- 2
+quadrant[DV <0 & LM_I<0] <- 3  
+quadrant[DV >0 & LM_I>0] <- 4    
+quadrant[localMI.2020[,5]>signif] <- 0
+
+rev_2020.localMI$quadrant <- quadrant
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
+tm_shape(rev_2020.localMI) +
+  tm_fill(col = "quadrant", 
+          style = "cat", 
+          palette = colors[c(sort(unique(quadrant)))+1], 
+          labels = clusters[c(sort(unique(quadrant)))+1],
+          popup.vars = c("")) +
+  tm_view(set.zoom.limits = c(11,17)) +
+  tm_borders(alpha=0.5)
+```
+
+**Provinces like Bangkok, Samut Sakhon, and Nonthaburi** seem to fall into the Low-High quadrant on your spatial analysis map. These provinces are performing lower in tourism revenue despite being surrounded by higher-performing neighbors. You could focus on this region for further investigation.
+
+#### Recovering Year: 2022
+
+##### Local Moran's I Calculation
+
+::: panel-tabset
+### Local Moran's I
+
+To compute local Moran’s I, the [*localmoran()*](https://r-spatial.github.io/spdep/reference/localmoran.html) function of **spdep** will be used. It computes *Ii* values, given a set of *zi* values and a listw object providing neighbour weighting information for the polygon associated with the zi values.
+
+The code chunks below are used to compute local Moran’s I of *revenue_all* at the province level.
+
+```{r}
+fips <- order(rev_2022$total_revenue)
+localMI.2022 <- localmoran(rev_2022$total_revenue, rswm_q_rev_2022)
+head(localMI.2022)
+```
+
+### Interpretation
+
+-   Most provinces show weak clustering or dispersion of tourism revenue, but these are not statistically significant (high p-values).
+
+-   The province in **Row 6** shows significant **dispersion** (i.e., it has a very different tourism revenue compared to its neighboring provinces). This result is statistically significant, indicating that this province is a potential outlier in the spatial distribution of tourism revenue.
+:::
+
+The code chunk below list the content of the local Moran matrix derived by using [*printCoefmat()*](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/printCoefmat).
+
+```{r}
+printCoefmat(data.frame(
+  localMI.2022[fips,], 
+  row.names=rev_2022$ADM1_EN[fips]),
+  check.names=FALSE)
+```
+
+**High and Significant Positive Ii Values (Clustering)**:
+
+-   **Nong Bua Lam Phu**:
+
+    -   **Ii = 5.2953e-01**, **Z.Ii = 3.0844e-01**, **p-value = 0.7577**
+
+    -   This province shows a positive Ii value but the p-value indicates that it is **not significant**, meaning the clustering could be due to chance.
+
+**Negative Ii Values with Significant P-values (Outliers)**:
+
+-   **Nonthaburi**:
+
+    -   **Ii = -4.0297e-01**, **Z.Ii = -3.3819e+00**, **p-value = 0.0007**
+
+    -   Nonthaburi has a significantly **negative Ii** value and a very low p-value, indicating that it is an **outlier** in terms of tourism revenue compared to its neighbors. This suggests that Nonthaburi's revenue is dissimilar to the surrounding provinces.
+
+-   **Samut Sakhon**:
+
+    -   **Ii = -2.9936e-01**, **Z.Ii = -3.4779e+00**, **p-value = 0.0005**
+
+    -   Similar to Nonthaburi, Samut Sakhon shows a **negative Moran's I statistic** with a highly significant p-value, indicating it is an outlier with respect to its neighbors in tourism revenue.
+
+**High Ii Values with Low P-values (Clustering)**:
+
+-   **Surat Thani**:
+
+    -   **Ii = 3.2158e-01**, **Z.Ii = 1.7075e+00**, **p-value = 0.0876**
+
+    -   Surat Thani shows **positive clustering**, but the p-value (0.0876) suggests that it is not statistically significant. This means its high tourism revenue compared to its neighbors might not form a significant spatial pattern.
+
+Identifying Potential Outliers:
+
+-   **Nonthaburi** and **Samut Sakhon** are **significant outliers**. They both have **negative Moran's I values** and **low p-values**, indicating that their tourism revenues are **lower than expected** compared to neighboring provinces.
+
+-   Provinces like **Surat Thani** and **Amnat Charoen** show **positive clustering**, but their results are not statistically significant, meaning the observed clustering might be due to random variation.
+
+##### Mapping both local Moran’s I values and p-values
+
+```{r}
+rev_2022.localMI <- cbind(rev_2022,localMI.2022) %>%
+  rename(Pr.Ii = Pr.z....E.Ii..)
+```
+
+For effective interpretation, it is better to plot both the local Moran’s I values map and its corresponding p-values map next to each other.
+
+The code chunk below will be used to create such visualisation.
+
+```{r}
+localMI.2022.map <- tm_shape(rev_2022.localMI) +
+  tm_fill(col = "Ii", 
+          style = "pretty", 
+          title = "local moran statistics") +
+  tm_borders(alpha = 0.5)
+
+pvalue.2022.map <- tm_shape(rev_2022.localMI) +
+  tm_fill(col = "Pr.Ii", 
+          breaks=c(-Inf, 0.001, 0.01, 0.05, 0.1, Inf),
+          palette="-Blues", 
+          title = "local Moran's I p-values") +
+  tm_borders(alpha = 0.5)
+
+tmap_arrange(localMI.2022.map, pvalue.2022.map, asp=1, ncol=2)
+```
+
+##### Add Moran's I Results to Dataset
+
+We append the results of Local Moran's I to the dataset for further analysis.
+
+```{r}
+rev_2022$local_moran <- localMI.2022[,1]
+```
+
+##### Cluster Identification (HH, LL, HL, LH)
+
+We can classify the results into clusters: High-High (HH), Low-Low (LL), High-Low (HL), and Low-High (LH) based on z-scores.
+
+-   **Hotspots (HH)**: Provinces that have high values and are surrounded by neighbors with high values. These are tourism revenue hotspots.
+
+-   **Cold spots (LL)**: Provinces with low values surrounded by neighbors with low values.
+
+-   **High-Low (HL)** and **Low-High (LH)** indicate outliers where a province's value is higher or lower than its neighbors.
+
+```{r}
+rev_2022$cluster <- ifelse(localMI.2022[,5] < 0.05,  # p-value significance
+                                   ifelse(localMI.2022[,4] > 0, "HH", "LL"), "Not Significant")
+```
+
+##### Visualize the Results Using ggplot2
+
+To map the identified clusters, we can use ggplot2.
+
+```{r}
+ggplot(rev_2022) +
+  geom_sf(aes(fill = cluster)) +
+  scale_fill_manual(values = c("HH" = "red", "LL" = "blue", "Not Significant" = "grey")) +
+  theme_minimal() +
+  labs(title = "Local Moran's I - Revenue Clusters",
+       fill = "Cluster")
+```
+
+Interpretation of the Map:
+
+1.  **Blue Areas (LL Clusters)**:
+
+    -   The provinces shaded in **blue** are showing **low-low clusters**. This means that these provinces have **low tourism revenue**, and they are surrounded by other provinces with similarly low tourism revenue.
+
+    -   These areas could potentially represent regions where tourism activities are generally lower, and this pattern holds across neighboring provinces. In this context, **southern provinces of central Thailand** appear to have clusters of low tourism revenue.
+
+2.  **Gray Areas (Not Significant)**:
+
+    -   The **gray provinces** show no statistically significant spatial autocorrelation in tourism revenue. In these areas, tourism revenue may not follow any specific clustering pattern, either high-high or low-low. These provinces have tourism revenue that does not have a strong relationship with their neighboring provinces in terms of similarities or dissimilarities.
+
+3.  **Unshaded or NA Areas**:
+
+    -   These regions either have missing data or were excluded from the analysis for some reason (such as having no valid neighboring regions to analyze).
+
+Implications of the Results:
+
+-   The **Low-Low (LL)** clusters may indicate areas where tourism infrastructure or marketing efforts are weaker, or where attractions are less developed compared to other regions. These regions might benefit from targeted interventions to improve tourism and boost revenue.
+
+-   The **Not Significant** regions may be areas where local factors (such as local attractions, accessibility, or provincial policies) are more important drivers of tourism revenue, without strong influence from neighboring provinces.
+
+##### Local Geary's C
+
+For more precise local autocorrelation, we can also compute **Local Geary's C**. This measures dissimilarities between neighbors.
+
+```{r}
+# Calculate Local Geary's C for 'revenue_all' using the correct function localC()
+local_geary_rev_2022 <- localC(rev_2022$total_revenue, rswm_q_rev_2022, zero.policy = TRUE)
+
+# Add Local Geary's C to the dataset for 'revenue_all'
+rev_2022$local_geary <- local_geary_rev_2022
+
+# Plot the results using ggplot
+ggplot(rev_2022) +
+  geom_sf(aes(fill = local_geary)) +
+  theme_minimal() +
+  labs(title = "Local Geary's C - Revenue clusters", fill = "Geary's C")
+```
+
+Interpretation of the Map:
+
+1.  **Provinces with Higher Geary’s C (Darker Blue)**:
+
+    -   Provinces that are shaded in **darker blue** have higher Geary’s C values, indicating that their tourism revenues are quite different from neighboring provinces. These provinces may be outliers with respect to their neighbors.
+
+    -   In your map, there are darker blue provinces, indicating that these areas have substantial differences in tourism revenue compared to their neighbors.
+
+2.  **Provinces with Lower Geary’s C (Lighter Blue)**:
+
+    -   The **lighter blue** regions have lower Geary’s C values, meaning that the tourism revenue in these provinces is more similar to that of their neighboring provinces. These regions might form clusters where provinces exhibit similar tourism revenue patterns.
+
+Implications of the Results:
+
+-   **High Geary’s C values** (darker blue areas) indicate provinces where the tourism revenue is **significantly different** from neighboring provinces. These areas might warrant further investigation to understand the reasons behind this discrepancy (e.g., unique attractions, significant tourism policies, or infrastructure differences).
+
+-   **Low Geary’s C values** (lighter blue areas) indicate provinces where the tourism revenue is **similar to neighboring provinces**, forming clusters of similarity.
+
+##### **Creating a LISA Cluster Map**
+
+The Moran scatterplot is an illustration of the relationship between the values of the chosen attribute at each location and the average value of the same attribute at neighboring locations.
+
+The code chunk below plots the Moran scatterplot of rev_2020 by using [*moran.plot()*](https://r-spatial.github.io/spdep/reference/moran.plot.html) of **spdep**.
+
+```{r}
+rev_2022$Z.total_revenue <- scale(rev_2022$total_revenue) %>% 
+  as.vector 
+
+nci2 <- moran.plot(rev_2022$Z.total_revenue, rswm_q_rev_2022,
+                   labels=as.character(rev_2020$ADM1_EN),
+                   xlab="z-rev_2022", 
+                   ylab="Spatially Lag z-rev_2022")
+```
+
+##### **Plotting LISA map**
+
+```{r}
+quadrant <- vector(mode="numeric",length=nrow(localMI.2022))
+rev_2022$lag_total_revenue <- lag.listw(rswm_q_rev_2022, rev_2022$total_revenue)
+DV <- rev_2022$lag_total_revenue - mean(rev_2022$lag_total_revenue)     
+LM_I <- localMI.2022[,1]   
+signif <- 0.05       
+quadrant[DV <0 & LM_I>0] <- 1
+quadrant[DV >0 & LM_I<0] <- 2
+quadrant[DV <0 & LM_I<0] <- 3  
+quadrant[DV >0 & LM_I>0] <- 4    
+quadrant[localMI.2022[,5]>signif] <- 0
+
+rev_2022.localMI$quadrant <- quadrant
+colors <- c("#ffffff", "#2c7bb6", "#abd9e9", "#fdae61", "#d7191c")
+clusters <- c("insignificant", "low-low", "low-high", "high-low", "high-high")
+
+tm_shape(rev_2022.localMI) +
+  tm_fill(col = "quadrant", 
+          style = "cat", 
+          palette = colors[c(sort(unique(quadrant)))+1], 
+          labels = clusters[c(sort(unique(quadrant)))+1],
+          popup.vars = c("")) +
+  tm_view(set.zoom.limits = c(11,17)) +
+  tm_borders(alpha=0.5)
+```
+
+## Emerging Hotspot Analysis
+
+Emerging hotspot analysis is used to detect how spatial patterns evolve over time. In this step, we will use spatio-temporal methods to analyze the evolution of tourism revenue and identify areas where hotspots are forming or declining. This will help reveal which provinces are experiencing an increase or decrease in tourism revenue over time.
+
+### **Gi statistics using adaptive distance**
+
+The code chunk below are used to compute the Gi values for rev_2020 and rev_2022 by using an adaptive distance weight matrix (i.e *knb_lw*).
+
+```{r}
+#For Pandemic Year: 2020
+longitude_2020 <- map_dbl(rev_2020$geometry, ~st_centroid(.x)[[1]])
+latitude_2020 <- map_dbl(rev_2020$geometry, ~st_centroid(.x)[[2]])
+coords_2020 <- cbind(longitude_2020, latitude_2020)
+k1_2020 <- knn2nb(knearneigh(coords_2020))
+k1dists_2020 <- unlist(nbdists(k1_2020, coords_2020, longlat = TRUE))
+knn_2020 <- knn2nb(knearneigh(coords_2020, k=8))
+knn_lw_2020 <- nb2listw(knn_2020, style = 'B')
+summary(knn_lw_2020)
+
+#For Pandemic Year: 2022
+longitude_2022 <- map_dbl(rev_2022$geometry, ~st_centroid(.x)[[1]])
+latitude_2022 <- map_dbl(rev_2022$geometry, ~st_centroid(.x)[[2]])
+coords_2022 <- cbind(longitude_2022, latitude_2022)
+k1_2022 <- knn2nb(knearneigh(coords_2022))
+k1dists_2022 <- unlist(nbdists(k1_2022, coords_2022, longlat = TRUE))
+knn_2022 <- knn2nb(knearneigh(coords_2022, k=8))
+knn_lw_2022 <- nb2listw(knn_2022, style = 'B')
+summary(knn_lw_2022)
+```
+
+```{r}
+# For rev_2020
+fips <- order(rev_2020$ADM1_EN)
+gi.adaptive <- localG(rev_2020$total_revenue, knn_lw_2020)
+rev_2020.gi <- cbind(rev_2020, as.matrix(gi.adaptive)) %>%
+  rename(gstat_adaptive = as.matrix.gi.adaptive.)
+
+# For rev_2022
+fips <- order(rev_2022$ADM1_EN)
+gi.adaptive <- localG(rev_2022$total_revenue, knn_lw_2022)
+rev_2022.gi <- cbind(rev_2022, as.matrix(gi.adaptive)) %>%
+  rename(gstat_adaptive = as.matrix.gi.adaptive.)
+```
+
+It is time for us to visualise the locations of hot spot and cold spot areas. The choropleth mapping functions of **tmap** package will be used to map the Gi values.
+
+The code chunk below shows the functions used to map the Gi values derived using fixed distance weight matrix.
+
+```{r}
+# For rev_2020
+revenue_2020 <- qtm(rev_2020, "total_revenue")
+
+Gimap_2020 <- tm_shape(rev_2020.gi) + 
+  tm_fill(col = "gstat_adaptive", 
+          style = "pretty", 
+          palette="-RdBu", 
+          title = "local Gi") + 
+  tm_borders(alpha = 0.5)
+
+tmap_arrange(revenue_2020, 
+             Gimap_2020, 
+             asp=1, 
+             ncol=2)
+```
+
+```{r}
+# For rev_2022
+revenue_2022<- qtm(rev_2022, "total_revenue")
+
+Gimap_2022 <- tm_shape(rev_2022.gi) + 
+  tm_fill(col = "gstat_adaptive", 
+          style = "pretty", 
+          palette="-RdBu", 
+          title = "local Gi") + 
+  tm_borders(alpha = 0.5)
+
+tmap_arrange(revenue_2022, 
+             Gimap_2022, 
+             asp=1, 
+             ncol=2)
+```
+
+### Interpretation of the Emerging Hotspot Analysis (2020 vs 2022):
+
+This analysis compares **tourism revenue** across Thailand’s provinces in **2020** (during COVID-19) and **2022** (post-COVID-19). The maps show two main elements for both years:
+
+1.  **Total Revenue (Left Maps)**:
+
+    -   The left maps in both 2020 and 2022 display the **total tourism revenue** in each province.
+
+    -   Darker shades represent higher tourism revenue, while lighter shades represent lower revenue.
+
+2.  **Local Gi (Right Maps)**:
+
+    -   The right maps display **Local Gi** statistics, indicating spatial autocorrelation and clustering of high or low tourism revenue.
+
+    -   **Blue areas**: Provinces with low tourism revenue surrounded by provinces with similarly low revenue (Low-Low clusters).
+
+    -   **Red areas**: Provinces with high tourism revenue surrounded by other provinces with similarly high revenue (High-High clusters).
+
+    -   **Light orange areas**: These represent transition zones or areas where local tourism revenue is moderately higher or lower than their neighbors.
+
+### Observations and Changes Between 2020 and 2022:
+
+1.  **Total Revenue (Left Maps)**:
+
+    -   **2020 (During COVID-19)**:
+
+        -   Overall, the tourism revenue in most provinces is **very low**, with only a few provinces (primarily around **Bangkok** and the central region) showing slightly higher revenue.
+
+        -   This reflects the impact of COVID-19, where most regions experienced a significant drop in tourism revenue.
+
+    -   **2022 (Post-COVID-19)**:
+
+        -   Tourism revenue remains relatively low across most of Thailand, though there is a noticeable increase compared to 2020, especially in provinces surrounding **Bangkok** and some southern regions.
+
+        -   While recovery is visible, the overall revenue is still below pre-pandemic levels, with the darker shades indicating moderate revenue growth in certain provinces.
+
+2.  **Local Gi (Right Maps)**:
+
+    -   **2020**:
+
+        -   **Blue clusters** dominate most of the map, indicating that **many provinces experienced low tourism revenue**, especially in northern and central Thailand.
+
+        -   **Red clusters** around Bangkok and southern provinces indicate that these regions were still maintaining higher levels of tourism revenue compared to neighboring provinces, forming **high-high clusters**.
+
+    -   **2022**:
+
+        -   **Blue clusters** are still prevalent across northern and northeastern Thailand, showing that these regions continue to struggle with low tourism revenue post-pandemic.
+
+        -   The **red clusters** (high-high clusters) are still present in central Thailand (Bangkok and surrounding provinces) and southern regions, indicating some resilience and recovery in tourism revenue compared to neighboring provinces.
+
+        -   **Orange regions** in the south suggest transitional zones where revenue is starting to improve but hasn't fully recovered yet.
+
+### Key Changes During and After COVID-19:
+
+1.  **Revenue Drop in 2020**:
+
+    -   The maps clearly show that most provinces experienced a **significant drop in tourism revenue** during COVID-19 in 2020, with very few provinces maintaining relatively high levels of revenue.
+
+    -   Provinces like **Bangkok, Phuket, and a few southern provinces** still managed to have some higher levels of tourism revenue, but they were isolated from neighboring provinces.
+
+2.  **Recovery in 2022**:
+
+    -   The maps show some **recovery in tourism revenue** in 2022, especially in the central and southern regions. However, northern and northeastern Thailand continue to struggle with low revenue, as seen in the continued presence of **Low-Low clusters**.
+
+    -   **High-High clusters** (red areas) have expanded in 2022, indicating that recovery is occurring in certain key tourism regions, especially around **Bangkok** and **Phuket**.
+
+3.  **Post-COVID Trends**:
+
+    -   The **high-high clusters** around **Bangkok** and **Phuket** regions, which were resilient during COVID-19, have strengthened in 2022.
+
+    -   While some regions have shown recovery, many provinces are still in the low-revenue category, indicating that tourism recovery has been uneven across Thailand, with certain regions recovering faster than others.
+
+### Conclusion:
+
+-   **2020 (During COVID-19)**: Significant decline in tourism revenue across Thailand, with only a few high-revenue provinces (Bangkok, Phuket, and surrounding regions).
+
+-   **2022 (Post-COVID-19)**: Signs of recovery in certain provinces, especially around Bangkok and southern Thailand. However, many provinces, particularly in the north and northeast, are still struggling with low tourism revenue.
+
+The analysis shows that **tourism recovery has been concentrated in key regions** while other areas continue to face challenges in returning to pre-pandemic levels.

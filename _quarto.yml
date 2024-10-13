@@ -27,6 +27,8 @@ website:
             href: "Hands-on_Ex/Hands-on_Ex06/Hands-onExercise6.1.qmd"    
           - text: "Hands-on Exercise 7.1"
             href: "Hands-on_Ex/Hands-on_Ex07/Hands-onExercise7.1.qmd"
+          - text: "Hands-on Exercise 8.1"
+            href: "Hands-on_Ex/Hands-on_Ex08/Hands-onExercise8.1.qmd"            
       - text: "In-class Exercises"
         menu: 
           - text: "In-class Exercise 1"
@@ -44,7 +46,9 @@ website:
       - text: "Take-home exercise"
         menu: 
           - text: "Take-home Exercise 1"
-            href: "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.qmd"             
+            href: "Take-home_Ex/Take-home_Ex01/Take-homeExercise1.qmd" 
+          - text: "Take-home Exercise 2"
+            href: "Take-home_Ex/Take-home_Ex02/Take-homeExercise2.qmd"  
         
     right: 
       - href: index.qmd
