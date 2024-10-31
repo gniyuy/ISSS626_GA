@@ -15,6 +15,190 @@ execute:
   freeze: true
 ---
 
-::: {style="font-size: 100px; text-align: center; color: #786F80;"}
-work in progress
+## Getting Started
+
+```{r}
+pacman::p_load(SpatialAcc, sf, tidyverse, 
+               tmap, ggstatsplot)
+```
+
+## Count Number of Points within a Distance
+
+### The task
+
+-   To count number of point features (i.e. CHAS clinics) within 1km of another point features (i.e. eldercare centre).
+
+::: callout-note
+To complete this section of the in-class exercise, you need to download both the CHAS Clinics and Eldercare Services data sets from data.gov.sg portal. The in-class exercise assumes explicitly the downloaded data sets are saved in rawdata sub-folder of In-class_Ex09 folder. Remember to unzip the file if necessary.
 :::
+
+### DIY
+
+-   Download *ELDERCARE* shapefile and *CHAS* kml file from data.gov.sg
+
+-   Using the steps your learned in Hands-on Exercise 1, import *ELDERCARE* shapefile and *CHAS* kml file into R
+
+### The code
+
+*ELDERCARE* is in shapefile format, the code chunk below will be used:
+
+```{r}
+eldercare <- st_read(dsn = "data/geospatial",
+                     layer = "ELDERCARE") %>%
+  st_transform(crs = 3414)
+```
+
+The code chunk below is used to import kml file.
+
+```{r}
+CHAS <- st_read("data/geospatial/CHAS Clinics.kml") %>%
+  st_transform(crs = 3414)
+```
+
+### Buffering
+
+Next, `st_buffer()` of sf package is used to create a buffer of 1km around each eldercare features
+
+```{r}
+buffer_1km <- st_buffer(eldercare, 
+                        dist = 1000)
+```
+
+### Visualising
+
+The code chunk below is used to plot the newly created buffers and the CHAS clinics.
+
+```{r}
+tmap_mode("view")
+tm_shape(buffer_1km) +
+  tm_polygons() +
+tm_shape(CHAS) +
+  tm_dots()
+```
+
+### Counting points
+
+Lastly, the code chunk below is used to count the number of CHAS clinics with 1km of each eldercare centre.
+
+```{r}
+buffer_1km$pts_count <- lengths(
+  st_intersects(buffer_1km, CHAS))
+```
+
+## Importing Data
+
+### Geospatial Data
+
+```{r}
+mpsz <- st_read(dsn = "Data/geospatial", layer = "MP14_SUBZONE_NO_SEA_PL")
+
+hexagons <- st_read(dsn = "Data/geospatial", layer = "hexagons") 
+
+eldercare <- st_read(dsn = "Data/geospatial", layer = "ELDERCARE") 
+```
+
+### OD Matrix
+
+```{r}
+ODMatrix <- read_csv("Data/aspatial/OD_Matrix.csv", skip = 0)
+```
+
+## Data cleaning and updating attributes
+
+### Supply
+
+```{r}
+eldercare <- eldercare %>%
+  select(fid, ADDRESSPOS) %>%
+  mutate(capacity = 100)
+```
+
+### Demand
+
+```{r}
+hexagons <- hexagons %>%
+  select(fid) %>%
+  mutate(demand = 100)
+```
+
+### OD Matrix
+
+```{r}
+distmat <- ODMatrix %>%
+  select(origin_id, destination_id, total_cost) %>%
+  spread(destination_id, total_cost)%>%
+  select(c(-c('origin_id')))
+```
+
+```{r}
+distmat_km <- as.matrix(distmat/1000)
+```
+
+## Computing Handsen’s Accessibility
+
+### The base code
+
+```{r}
+acc_Hansen <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 2, 
+                            family = "Hansen"))
+```
+
+### Tidy the output
+
+```{r}
+colnames(acc_Hansen) <- "accHansen"
+
+acc_Hansen <- as_tibble(acc_Hansen)
+
+hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
+```
+
+### Combine code chunk
+
+```{r}
+acc_Hansen <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 0.5, 
+                            family = "Hansen"))
+
+colnames(acc_Hansen) <- "accHansen"
+acc_Hansen <- as_tibble(acc_Hansen)
+hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
+```
+
+### Visualising Accessibility
+
+### The code
+
+```{r}
+mapex <- st_bbox(hexagons)
+
+tmap_mode("plot")
+tm_shape(hexagon_Hansen,
+         bbox = mapex) + 
+  tm_fill(col = "accHansen",
+          n = 10,
+          style = "quantile",
+          border.col = "black",
+          border.lwd = 1) +
+tm_shape(eldercare) +
+  tm_symbols(size = 0.1) +
+  tm_layout(main.title = "Accessibility to eldercare: Hansen method",
+            main.title.position = "center",
+            main.title.size = 2,
+            legend.outside = FALSE,
+            legend.height = 0.45, 
+            legend.width = 3.0,
+            legend.format = list(digits = 6),
+            legend.position = c("right", "top"),
+            frame = TRUE) +
+  tm_compass(type="8star", size = 2) +
+  tm_scale_bar(width = 0.15) +
+  tm_grid(lwd = 0.1, alpha = 0.5)
+```
